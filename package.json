@@ -1,0 +1,12 @@
+{
+  "name": "autopost-pro",
+  "version": "1.0.0",
+  "description": "AI social media auto-posting agent",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
