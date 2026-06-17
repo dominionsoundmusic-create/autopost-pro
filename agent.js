@@ -102,8 +102,15 @@ function postToFacebook(pageId, token, message) {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch(e) { reject(e); }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.error) {
+            reject(new Error(`FB API error (status ${res.statusCode}): ${JSON.stringify(parsed.error)}`));
+          } else {
+            resolve(parsed);
+          }
+        }
+        catch(e) { reject(new Error(`Failed to parse FB response (status ${res.statusCode}): ${data}`)); }
       });
     });
     req.on('error', reject);
