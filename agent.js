@@ -103,6 +103,409 @@ const DOMINION_SOUND_RELEASES = [
   { title: "Mountains in the Morning", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--5B74F713-7C95-4870-8A9BABF8FF1336F1--0--12789101--300.jpg" },
 
 ];
+// Real Kidstorybooks catalog with Amazon cover art (extracted from live site June 21, 2026)
+
+const KIDSTORYBOOKS_CATALOG = [
+
+  { title: "From Puddle to Pond: Tadpole's Big Adventure", asin: "B0H4SNH1SY", category: "nature" },
+
+  { title: "The Hungry Little Seed: How the Venus Flytrap Grows", asin: "B0H3Q9HVV7", category: "nature" },
+
+  { title: "The Butterfly Sisters", asin: "B0H1RXJJLL", category: "childrens" },
+
+  { title: "The Donkey Who Had to Speak Up", asin: "B0H2RVLFNK", category: "christian" },
+
+  { title: "The Lifecycle of a Kangaroo: Ages 3-5", asin: "B0H23W9ZFJ", category: "nature" },
+
+  { title: "The Lifecycle of a Hummingbird: Ages 3-5", asin: "B0H1X4KM9Y", category: "nature" },
+
+  { title: "The Lifecycle of a Salmon: Ages 3-5", asin: "B0H1RSF8BC", category: "nature" },
+
+  { title: "Lifecycle of a Pine Tree: The Evergreen Promise", asin: "B0H1MW3MCS", category: "nature" },
+
+  { title: "Lifecycle of a Strawberry", asin: "B0H1J8NNNQ", category: "nature" },
+
+  { title: "Lifecycle of a Bean Plant: Reaching for the Light", asin: "B0H1HTWCHC", category: "nature" },
+
+  { title: "The Faithful Mustard Seed: Small but Mighty", asin: "B0GZVSS9QZ", category: "nature" },
+
+  { title: "The Everyday Queen: A Crown for Mom", asin: "B0GZPK1SBB", category: "childrens" },
+
+  { title: "The Honest Ivy: The Courage to Tell the Truth", asin: "B0GZDSBP8B", category: "nature" },
+
+  { title: "The Bountiful Bramble: Learning to Share Your Sweetness", asin: "B0GZBKWC13", category: "nature" },
+
+  { title: "The Gentle Willow: Letting Go of the Heavy Leaves", asin: "B0GZ4GYNCR", category: "nature" },
+
+  { title: "The Remarkable Redwood: Standing Strong Together", asin: "B0GZ48DL2Z", category: "nature" },
+
+  { title: "The Brave Bamboo: Learning to Bend in the Wind", asin: "B0GYWWZTZW", category: "nature" },
+
+  { title: "The Daring Dandelion: Scattering Seeds of Joy", asin: "B0GYRT1SVB", category: "nature" },
+
+  { title: "The Humble Apple Seed: From Tiny Pip to a Harvest of Joy", asin: "B0GYP3DVDZ", category: "nature" },
+
+  { title: "The New Little Sister", asin: "B0GXYWB7ZC", category: "childrens" },
+
+  { title: "Cam the Chameleon Who Ran Out of Color", asin: "B0GCYR4D1T", category: "childrens" },
+
+  { title: "Benny's Big Balloon", asin: "B0G8VRZ4GJ", category: "childrens" },
+
+  { title: "Barnaby Bear's Wobbly Bicycle", asin: "B0G6WRDNLV", category: "childrens" },
+
+  { title: "The Radiant Sunflower: From Tiny Seed to Golden Giant", asin: "B0GY8VFHB8", category: "nature" },
+
+  { title: "The Marvelous Monarch: From Tiny Egg to Painted Wings", asin: "B0GY815SH7", category: "nature" },
+
+  { title: "The Mighty Oak: From Acorn to Ancient Sentinel", asin: "B0GY7Q2LTB", category: "nature" },
+
+  { title: "Lifecycle of a Penguin: Ages 3-5", asin: "B0GY7C6LM4", category: "nature" },
+
+  { title: "Lifecycle of a Spider: Ages 3-5", asin: "B0GY4TM8J5", category: "nature" },
+
+  { title: "Lifecycle of an Ant: Ages 3-5", asin: "B0GY46SWTN", category: "nature" },
+
+  { title: "Lifecycle Of An Apple Tree: Ages 3-5", asin: "B0GY3MJN7Y", category: "nature" },
+
+  { title: "Lifecycle of a Chicken: Ages 3-5", asin: "B0GXZGWSN7", category: "nature" },
+
+  { title: "The Five Senses: Ages 3-5", asin: "B0GXVLH1HF", category: "nature" },
+
+  { title: "Lifecycle of a Ladybug: Ages 3-5", asin: "B0GXP4Z5Z8", category: "nature" },
+
+  { title: "Lifecycle of a Sea Turtle: Ages 3-5", asin: "B0GXJ7DCK7", category: "nature" },
+
+  { title: "Lifecycle of a Frog: Ages 3-5", asin: "B0GXDZ6TNW", category: "nature" },
+
+  { title: "Lifecycle of a Honey Bee", asin: "B0GX9JL5MM", category: "nature" },
+
+  { title: "Lifecycle Of A Plant", asin: "B0GX7CPD3K", category: "nature" },
+
+  { title: "Obedience On The First Try", asin: "B0GX6NKB8K", category: "christian" },
+
+  { title: "Lifecycle Of A Butterfly", asin: "B0GWXYJSG6", category: "nature" },
+
+  { title: "Hector the Hippo and the Huge Hat", asin: "B0GWWXB1QC", category: "childrens" },
+
+  { title: "Conscious Discipline: Understanding Our Feelings", asin: "B0GW34JNV9", category: "childrens" },
+
+  { title: "Planting Seeds of Kindness", asin: "B0G3TPMGWW", category: "childrens" },
+
+  { title: "Luna and the Lullaby Light", asin: "B0GTZK4KQ4", category: "childrens" },
+
+  { title: "Gideon's Great Height", asin: "B0GTBGGYTD", category: "christian" },
+
+  { title: "Franklin's Leap of Faith", asin: "B0GT9S3BTJ", category: "christian" },
+
+  { title: "The True Meaning of Easter", asin: "B0GT4VC6ZP", category: "christian" },
+
+  { title: "Noah's Ark", asin: "B0FXRGGS7M", category: "christian" },
+
+  { title: "Jonah and the Big Fish", asin: "B0FXRKJ5K3", category: "christian" },
+
+  { title: "The Faithful Fig Tree", asin: "B0GT17ZCTZ", category: "christian" },
+
+  { title: "Felix the Flashlight: A Story of Shining Bright", asin: "B0GSWCPW2F", category: "christian" },
+
+  { title: "Creature Connections: Addison's Quiet Grace", asin: "B0GQB4QWRG", category: "childrens" },
+
+  { title: "Olivia's Tangled Day", asin: "B0GSCV7MYR", category: "christian" },
+
+  { title: "Eddie the Engine's Impossible Pull", asin: "B0GS5K47S9", category: "christian" },
+
+  { title: "Edgar the Emu's Fast Feet", asin: "B0GS543MY3", category: "christian" },
+
+  { title: "Ernie the Eraser's Gift of Grace", asin: "B0GS2H2DWY", category: "christian" },
+
+  { title: "Sammy's Thankful Tree", asin: "B0G25LWFSF", category: "christian" },
+
+  { title: "The Secret To Unshakable Truth!", asin: "B0GPL1SRTX", category: "teens" },
+
+  { title: "Navigating Life's Deep Questions: Why Do Bad Things Happen?", asin: "B0GPLD3LXV", category: "teens" },
+
+  { title: "The Secret To Knowing God", asin: "B0GP6JJ86J", category: "christian" },
+
+  { title: "Arthur the Anchor Holds Fast", asin: "B0GNZHL78N", category: "christian" },
+
+  { title: "Pip, The Super Swimmer", asin: "B0GNTDR7GT", category: "christian" },
+
+  { title: "Celebrating Black History: Heroes and Innovators", asin: "B0GNK7HTS6", category: "teens" },
+
+  { title: "Barnaby the Bumblebee & The Impossible Flight", asin: "B0GNJG3BZY", category: "christian" },
+
+  { title: "Rocky the Geode & The Hidden Treasure", asin: "B0GN8XWHBH", category: "christian" },
+
+  { title: "Flash the Firefly & The Darkest Night", asin: "B0GN8SHRZZ", category: "christian" },
+
+  { title: "Sammy the Seed: Fun Facts & Big Faith for Little Hearts", asin: "B0GN3L18Z3", category: "christian" },
+
+  { title: "The Impossible Crumb", asin: "B0GN2ZCFY9", category: "christian" },
+
+  { title: "Skyler the Kite & The String of Love", asin: "B0GMWDJC5L", category: "christian" },
+
+  { title: "Penny the Caterpillar & The Impossible Dream", asin: "B0GMWJWBT4", category: "christian" },
+
+  { title: "Captain North & The Lost Bunny", asin: "B0GMQLMPDC", category: "christian" },
+
+  { title: "Builder Ben's Unbreakable Dam", asin: "B0GMQCSFV5", category: "christian" },
+
+  { title: "A Gift from God", asin: "B0G5DZ1FD3", category: "christian" },
+
+  { title: "Barnaby Bear and the Great Winter Share", asin: "B0G4W76B7D", category: "childrens" },
+
+  { title: "Jehovah-Mekaddishkhem: My Sanctifier!", asin: "B0GLQ252L4", category: "christian" },
+
+  { title: "Jehovah RHOI: My Shepherd!", asin: "B0GLP63ZK8", category: "christian" },
+
+  { title: "Jehovah Shemmah: My Ever-Present God!", asin: "B0GLNFYV6M", category: "christian" },
+
+  { title: "Seeking First: Matthew 6:33", asin: "B0G1YPX86R", category: "christian" },
+
+  { title: "JEHOVAH-TSIDKENU: My Righteousness!", asin: "B0GLGXYDWD", category: "christian" },
+
+  { title: "JEHOVAH-SHALOM: My Peace!", asin: "B0GLGJZFVN", category: "christian" },
+
+  { title: "Jehovah Rapha: My Healer!", asin: "B0GKWBQL8Z", category: "christian" },
+
+  { title: "Jehovah Nissi: My Banner!", asin: "B0GKV6ZZX2", category: "christian" },
+
+  { title: "Jehovah Jireh: My Provider!", asin: "B0GKV1QTHT", category: "christian" },
+
+  { title: "Jehovah: Eternal, Permanent, and Self-Existent!", asin: "B0GKPY8HNC", category: "christian" },
+
+  { title: "ADONAI: Owner of My Life!", asin: "B0GKNYBVNF", category: "christian" },
+
+  { title: "EL SHADDAI: All-Sufficient!", asin: "B0GKMTZQR8", category: "christian" },
+
+  { title: "ELOHIM The Creator", asin: "B0GKGDC1X5", category: "christian" },
+
+  { title: "EL-ALMIGHTY GOD!", asin: "B0GKFFY4VQ", category: "christian" },
+
+  { title: "Sharing God's Love", asin: "B0GJZR832L", category: "christian" },
+
+  { title: "David and Goliath", asin: "B0FY3N357X", category: "christian" },
+
+  { title: "Leo and Mia's Grand Learning Adventure", asin: "B0FXWJVQ8S", category: "childrens" },
+
+  { title: "Amin's Sky Soar", asin: "B0FY1SMBLG", category: "childrens" },
+
+  { title: "Talia's Starry Prayer", asin: "B0FY267CGH", category: "christian" },
+
+  { title: "The Grateful Goose's Feast", asin: "B0G1YX9VKS", category: "childrens" },
+
+  { title: "Herman's Shiny Shell", asin: "B0GHF34JYD", category: "childrens" },
+
+  { title: "Creation God's Super-Duper Week", asin: "B0FXTFMZX4", category: "christian" },
+
+  { title: "Pippin Puffs Up", asin: "B0GH87PTN7", category: "childrens" },
+
+  { title: "The Loving Father and His Two Sons", asin: "B0G4R6W5MJ", category: "christian" },
+
+  { title: "The Heartbeat of the Neighborhood: Kai's Barbershop Journey", asin: "B0G4LXB397", category: "childrens" },
+
+  { title: "Zuri the Little Scientist and the Ladybug Spot", asin: "B0G4GTLKFZ", category: "childrens" },
+
+  { title: "The Secret of the Garden", asin: "B0G4CCJJJG", category: "christian" },
+
+  { title: "The Tower of Babel", asin: "B0G48K3HQ1", category: "christian" },
+
+  { title: "The Seed of Worry", asin: "B0G471VWDQ", category: "childrens" },
+
+  { title: "Finley's Fidgety Spots", asin: "B0G3LZVDBD", category: "childrens" },
+
+  { title: "The Sunflower Secret", asin: "B0G3LV1BKY", category: "childrens" },
+
+  { title: "Shelby's Speed Secret", asin: "B0G3H8FX6W", category: "childrens" },
+
+  { title: "Freddie the Fox Who Felt Too Fast", asin: "B0G33BX6FN", category: "childrens" },
+
+  { title: "The Little Engineer Who Couldn't Wait", asin: "B0G2CCQ1RC", category: "childrens" },
+
+  { title: "Ella and the Quiet Rumble", asin: "B0GDFQQSWP", category: "childrens" },
+
+  { title: "The Owl Who Loved the Day", asin: "B0GDFPCCX6", category: "childrens" },
+
+  { title: "The Shark Who Needed Glasses", asin: "B0GD77WRVQ", category: "childrens" },
+
+  { title: "Simon's Nutty Rescue", asin: "B0GCZR4ZBQ", category: "childrens" },
+
+  { title: "The Blessed Path", asin: "B0G2HFYTL4", category: "christian" },
+
+  { title: "Detective Paws and the Case of the Missing Squeak", asin: "B0GCW3F8H5", category: "childrens" },
+
+  { title: "Willow's Heavy Words", asin: "B0GCWFGMGD", category: "childrens" },
+
+  { title: "Shemaiah and Tia's Splashy Spa Surprise", asin: "B0FZ93T68W", category: "childrens" },
+
+  { title: "Chatter's Banana Phone Adventure", asin: "B0GCRX4MRQ", category: "childrens" },
+
+  { title: "Simon Squirrel's Winter Ride", asin: "B0GCM3HXGQ", category: "childrens" },
+
+  { title: "The Girl Who Planted a Raincloud", asin: "B0GCHYKQ61", category: "childrens" },
+
+  { title: "The Antique Shop of Unfinished Things", asin: "B0GC86XJT9", category: "childrens" },
+
+  { title: "Officer Owl and the Missing Moon", asin: "B0GC7JC1SV", category: "childrens" },
+
+  { title: "Pip's Golden Acorn", asin: "B0GC77TFJR", category: "childrens" },
+
+  { title: "Jomo's River Bounty", asin: "B0FXXNG2PN", category: "childrens" },
+
+  { title: "Maple's Hidden Island Hop", asin: "B0FXTQXS7P", category: "childrens" },
+
+  { title: "Dino-Nugget Dave: The Dinosaur Who Refused Dinner", asin: "B0G9S9XXN7", category: "childrens" },
+
+  { title: "Yuri the Yeti and the Power of Yet", asin: "B0G9SR81H3", category: "childrens" },
+
+  { title: "The Grumble-Bee Who Found His Buzz", asin: "B0G9M4BVZ3", category: "childrens" },
+
+  { title: "The Nocturnal Friend: Oliver's Brightest Day", asin: "B0G7JMV8NK", category: "childrens" },
+
+  { title: "The Smallest Hero", asin: "B0G6ZB6R7C", category: "childrens" },
+
+  { title: "Simon Saves The Day", asin: "B0G6Z2H7L3", category: "childrens" },
+
+  { title: "Leo and the Loud Library", asin: "B0G6TXCVCP", category: "childrens" },
+
+  { title: "The Worry Whales and Milo's Map", asin: "B0G6RZ217V", category: "childrens" },
+
+  { title: "The Farmer and the Seeds", asin: "B0G6F75G2D", category: "christian" },
+
+  { title: "Generations of Grace", asin: "B0G64RK5C9", category: "christian" },
+
+  { title: "Kofi and Kwame: Brothers Through Thick and Thin", asin: "B0G5Z66BW7", category: "childrens" },
+
+  { title: "Rusty the Rafter Squirrel and the Library Mystery", asin: "B0G5Y6ZDXZ", category: "childrens" },
+
+  { title: "The Secret of the Sacred Scroll", asin: "B0G5PKR3WF", category: "christian" },
+
+  { title: "Ferdinand and the Ticklish Secret", asin: "B0G5K73YDQ", category: "childrens" },
+
+  { title: "We Love Because He First Loved Us: 1 John 4:19", asin: "B0G5FQYLVF", category: "christian" },
+
+  { title: "Remy Raccoon and the Quiet Forest", asin: "B0G5GD6MX4", category: "childrens" },
+
+  { title: "Rupert's Invisible Bridge and the Valley of Lost Things", asin: "B0G588485P", category: "childrens" },
+
+  { title: "Eli and the Mystery Skree-eek!", asin: "B0G4W4MGMT", category: "childrens" },
+
+  { title: "Wally the Wombat Who Couldn't Wait", asin: "B0G4VSMLHQ", category: "childrens" },
+
+  { title: "The Littlest Lamb Who Couldn't Sleep", asin: "B0G4VRNPCX", category: "childrens" },
+
+  { title: "Felix Finds His Song", asin: "B0G4R7HTTH", category: "childrens" },
+
+  { title: "The Hive's Great Data Disaster", asin: "B0G3QMLP9J", category: "childrens" },
+
+  { title: "Missing Moonbeam", asin: "B0G3F88V4S", category: "childrens" },
+
+  { title: "Penny the Planner and the Wobbly Bridge", asin: "B0G39QQMRT", category: "childrens" },
+
+  { title: "The Worry Cloud in My Tummy", asin: "B0G397NWXV", category: "childrens" },
+
+  { title: "My Heart Is Happy: A Little Book of God's Blessings", asin: "B0G356DQD4", category: "christian" },
+
+  { title: "The Little Seed Who Wouldn't Grow", asin: "B0G2XRXHBC", category: "childrens" },
+
+  { title: "The Day the Scribbly Crayon Found Its Color", asin: "B0G2SZYWNS", category: "childrens" },
+
+  { title: "The Loudest Whisper", asin: "B0G2T18WQG", category: "childrens" },
+
+  { title: "The Golden Rule: Treat Others As You Wish To Be Treated", asin: "B0G2RT3V4X", category: "christian" },
+
+  { title: "The Prayer of Salvation: Romans 10:9-10", asin: "B0G2JV37MH", category: "christian" },
+
+  { title: "The Lord's Blessing: Riches with No Sorrow", asin: "B0G2J33FM7", category: "christian" },
+
+  { title: "Grandma Sara's Prayer Power", asin: "B0G2GDCWF5", category: "christian" },
+
+  { title: "Counting Stars: Luna's Cosmic Adventure", asin: "B0G2CTRB42", category: "childrens" },
+
+  { title: "Sebastian's Fuzzies: A Cat's Guide to Human Management", asin: "B0G292JLNN", category: "childrens" },
+
+  { title: "The Grumbles That Went to Sleep", asin: "B0G25M1PBR", category: "childrens" },
+
+  { title: "The Thankful Tractor", asin: "B0G1ZF55QK", category: "christian" },
+
+  { title: "Henrietta, the Chicken Who Thought She Was a Superhero", asin: "B0G1Z1688H", category: "childrens" },
+
+  { title: "The Library Lion Who Forgot How to Roar", asin: "B0FY5GW6BL", category: "childrens" },
+
+  { title: "Elijah and the Widow's Son: A Story of Faith and Miracles", asin: "B0FY3F4GPX", category: "christian" },
+
+  { title: "Jayden's Joyful Hut", asin: "B0FY38MGZW", category: "childrens" },
+
+  { title: "Moses in Egypt and the Exodus", asin: "B0FXTMFS6D", category: "christian" },
+
+  { title: "Beyond Sunday", asin: "B0FXTFMZX4", category: "christian" },
+
+];
+
+function bookCoverUrl(asin) {
+  return `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`;
+   }
+
+// Cookbook titles — same catalog family, posted with cooking-focused copy instead of storytime framing
+
+const KIDSTORYBOOKS_COOKBOOKS = [
+
+  { title: "Copper & Cane: The Elevated Southern Sweet Treats Cookbook", asin: "B0GWHM9SZX", category: "cookbooks" },
+
+  { title: "Spoon & Silk: The Elevated Southern Pudding Cookbook", asin: "B0GVY2SJ3X", category: "cookbooks" },
+
+  { title: "Cream & Churn: The Elevated Southern Ice Cream Cookbook", asin: "B0GW2MSG6V", category: "cookbooks" },
+
+  { title: "Batter & Brass: The Elevated Southern Bar Cookbook", asin: "B0GVNZ72PY", category: "cookbooks" },
+
+  { title: "Molasses & Melt: The Elevated Southern Cookie Cookbook", asin: "B0GVMRH2VL", category: "cookbooks" },
+
+  { title: "Orchard & Iron: The Elevated Southern Cobbler Cookbook", asin: "B0GVMV534Y", category: "cookbooks" },
+
+  { title: "The Everyday High-Protein Cookbook", asin: "B0GPPZZNLP", category: "cookbooks" },
+
+  { title: "Roux & Root: A Culinary Journey Of Heritage and Flavor", asin: "B0GPDKZB4M", category: "cookbooks" },
+
+  { title: "WILD & CHOSEN: The Hunter's Harvest Cookbook", asin: "B0GHQGGTXR", category: "cookbooks" },
+
+  { title: "PRESS & PULSE: Recovery Tonics and Vitality Blends", asin: "B0GHPXRHVC", category: "cookbooks" },
+
+  { title: "Field & Fuel: Essential Carbohydrates for Endurance", asin: "B0GHP1V63W", category: "cookbooks" },
+
+  { title: "Prime And Power: High-Performance Proteins for Strength", asin: "B0GHNDNN46", category: "cookbooks" },
+
+  { title: "Grits And Grain: Morning Fuel for Discipline and Drive", asin: "B0GHJKKPYN", category: "cookbooks" },
+
+  { title: "SOUL & SPICE: Elevated Soul Food", asin: "B0GJD6V82Q", category: "cookbooks" },
+
+  { title: "SMOKE & SEAR: Elevated Barbecue & Grilling", asin: "B0GJ3WTHVC", category: "cookbooks" },
+
+  { title: "WOK & WILLOW: Elevated Asian Fusion", asin: "B0GHYDGG84", category: "cookbooks" },
+
+  { title: "IRON & OIL: One Skillet, Infinite Flavor", asin: "B0GJKZC41T", category: "cookbooks" },
+
+  { title: "The Type 2 Table: Delicious Meals for a Balanced Life", asin: "B0GP13KJW9", category: "cookbooks" },
+
+  { title: "The Puerto Rican Kitchen", asin: "B0GN2M3316", category: "cookbooks" },
+
+  { title: "FLOUR & FROSTING: The Ultimate Kids' Baking Book", asin: "B0GK6H858F", category: "cookbooks" },
+
+  { title: "FLOUR & FIRE: Elevated Rustic Italian", asin: "B0GHSPJTPX", category: "cookbooks" },
+
+  { title: "Smoke & Oak: Elevated Barbecue & Bourbon", asin: "B0GFDSNH3S", category: "cookbooks" },
+
+  { title: "TIDE & TABLE: Elevated Coastal Cuisine", asin: "B0GFJL2YHD", category: "cookbooks" },
+
+  { title: "Salt And Sea: Elevated Coastal Cuisine", asin: "B0GG6JXPLQ", category: "cookbooks" },
+
+  { title: "SMOKE & SEAR Elevated Steakhouse Classics", asin: "B0GF1YGX2X", category: "cookbooks" },
+
+  { title: "CRISP & COMFORT: Elevated Air Fryer Classics", asin: "B0GDQJ5141", category: "cookbooks" },
+
+  { title: "Tides & Traditions: Elevated Seafood Classics", asin: "B0GDQBVJ5N", category: "cookbooks" },
+
+  { title: "Heritage & Heat: Elevated Mexican Classics", asin: "B0GDLQ8GFY", category: "cookbooks" },
+
+];
 
 // Your two businesses (add more clients below as you onboard them)
 
@@ -150,7 +553,7 @@ const CLIENTS = [
 
     website: 'kidstorybooks.com',
 
-    topics: ['book_spotlight', 'parent_tip', 'engage'],
+    topics: ['book_spotlight', 'cookbook_spotlight', 'parent_tip', 'engage'],
 
     postTimes: [
 
@@ -174,20 +577,6 @@ const CLIENTS = [
 
 ];
 
-// Book list for kidstorybooks spotlight rotation
-
-const BOOK_TITLES = [
-
-  'The Brave Little Bunny', 'Stars and Moonbeams', 'Captain Courage',
-
-  'The Dragon Who Was Afraid', 'Grandma\'s Garden', 'Five Little Frogs',
-
-  'Lost in the Forest', 'The Magic Crayon', 'Best Friends Forever',
-
-  'A Dinosaur Day', 'The Sleepy Cloud', 'Rainbow Fish Tales'
-
-];
-
 // Topic rotation — keeps posts fresh
 
 const TOPIC_GUIDES = {
@@ -200,7 +589,9 @@ const TOPIC_GUIDES = {
 
   release:      'Announce or remind fans about recent releases. Sound excited and genuine.',
 
-  book_spotlight: `Spotlight this children's book: "${BOOK_TITLES[new Date().getDate() % BOOK_TITLES.length]}". Mention it's available on Amazon at kidstorybooks.com. Warm, parent-friendly tone.`,
+  book_spotlight: 'Spotlight a specific children\'s book from the catalog. Mention it\'s available on Amazon at kidstorybooks.com. Warm, parent-friendly tone.',
+
+  cookbook_spotlight: 'Spotlight a specific cookbook from the catalog. This is a cooking/recipe book, NOT a children\'s storybook — write with a food-lover, kitchen-inspired tone (mouth-watering, appetite-driving), not a storytime tone. Mention it\'s available on Amazon at kidstorybooks.com.',
 
   parent_tip:   'Share a fun reading tip or benefit of reading to children. Soft sell — mention kidstorybooks.com at the end.',
 
@@ -392,15 +783,37 @@ async function runPostingAgent(slotInfo) {
 
       // If this is a music/release post for Dominion Sound, pick a real song + real cover art
 
-      let selectedSong = null;
+      // If this is a book_spotlight post for Kidstorybooks, pick a real book + real Amazon cover
+
+      let selectedItem = null;
 
       let extraContext = '';
 
+      let imageUrl = null;
+
       if (client.id === 'dominion-sound' && (topic === 'music' || topic === 'release')) {
 
-        selectedSong = DOMINION_SOUND_RELEASES[(dayOfYear + Math.max(slotIndex, 0)) % DOMINION_SOUND_RELEASES.length];
+        selectedItem = DOMINION_SOUND_RELEASES[(dayOfYear + Math.max(slotIndex, 0)) % DOMINION_SOUND_RELEASES.length];
 
-        extraContext = `\nFeature this specific song by name: "${selectedSong.title}". Make the post about this song specifically.`;
+        extraContext = `\nFeature this specific song by name: "${selectedItem.title}". Make the post about this song specifically.`;
+
+        imageUrl = selectedItem.cover;
+
+      } else if (client.id === 'kidstorybooks' && topic === 'book_spotlight') {
+
+        selectedItem = KIDSTORYBOOKS_CATALOG[(dayOfYear + Math.max(slotIndex, 0)) % KIDSTORYBOOKS_CATALOG.length];
+
+        extraContext = `\nFeature this specific book by title: "${selectedItem.title}" (category: ${selectedItem.category}). Make the post about this book specifically — describe what a parent/child would enjoy about it.`;
+
+        imageUrl = bookCoverUrl(selectedItem.asin);
+
+      } else if (client.id === 'kidstorybooks' && topic === 'cookbook_spotlight') {
+
+        selectedItem = KIDSTORYBOOKS_COOKBOOKS[(dayOfYear + Math.max(slotIndex, 0)) % KIDSTORYBOOKS_COOKBOOKS.length];
+
+        extraContext = `\nFeature this specific cookbook by title: "${selectedItem.title}". This is a cooking/recipe book — make the post about this cookbook specifically, with food-focused, appetite-driving language, not a children's story tone.`;
+
+        imageUrl = bookCoverUrl(selectedItem.asin);
 
       }
 
@@ -414,7 +827,7 @@ Today's direction: ${topicGuide}${extraContext}
 
 Make it authentic, warm, and human.`;
 
-      console.log(`✍ Writing post for ${client.name} (topic: ${topic}${selectedSong ? ', song: ' + selectedSong.title : ''})...`);
+      console.log(`✍ Writing post for ${client.name} (topic: ${topic}${selectedItem ? ', featuring: ' + selectedItem.title : ''})...`);
 
       const postText = await callAnthropic(prompt);
 
@@ -422,13 +835,11 @@ Make it authentic, warm, and human.`;
 
       console.log(`📝 Post: ${postText}`);
 
-      const imageUrl = selectedSong ? selectedSong.cover : null;
-
       const result = await postToFacebook(client.fbPageId, client.fbToken, postText, imageUrl);
 
       if (result.id) {
 
-        console.log(`✅ Posted to ${client.name}${selectedSong ? ' (with cover art)' : ''} — Post ID: ${result.id}`);
+        console.log(`✅ Posted to ${client.name}${imageUrl ? ' (with cover art)' : ''} — Post ID: ${result.id}`);
 
       } else {
 
@@ -450,7 +861,7 @@ Make it authentic, warm, and human.`;
 
   console.log(`[${new Date().toISOString()}] Agent run complete.\n`);
 
-}
+        }
 
 // ─── SCHEDULER — checks every minute, fires for any client scheduled at this minute ──
 
