@@ -2,7 +2,6 @@
 // Deploy to Render.com (free tier) — runs 24/7
 
 const https = require('https');
-const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 
 // ─── SMS NOTIFIER (Twilio) ───────────────────────────────────────────────────
@@ -228,36 +227,58 @@ async function publishWeeklyBlogPost() {
   }
 }
 
-// ─── EMAIL NOTIFIER ────────────────────────────────────────────────────────────
-const EMAIL_USER = process.env.GMAIL_SENDER_USER; // kidstorybookssell@gmail.com (paid account, sends for both businesses)
-const EMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+// ─── EMAIL NOTIFIER (via Resend — works on Render free tier, unlike Gmail SMTP) ──
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'AutoPost Pro <onboarding@resend.dev>';
+const EMAIL_USER = process.env.NOTIFY_EMAIL || process.env.GMAIL_SENDER_USER; // where YOUR notifications land
 
-const mailTransporter = (EMAIL_USER && EMAIL_APP_PASSWORD) ? nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: EMAIL_USER, pass: EMAIL_APP_PASSWORD }
-}) : null;
+function sendEmail(to, subject, html) {
+  return new Promise((resolve, reject) => {
+    if (!RESEND_API_KEY) {
+      console.log('⚠ Email not configured (no RESEND_API_KEY) — skipping notification');
+      resolve(null);
+      return;
+    }
+    const body = JSON.stringify({ from: RESEND_FROM_EMAIL, to: [to], subject, html });
+    const req = https.request({
+      hostname: 'api.resend.com',
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Length': Buffer.byteLength(body),
+      }
+    }, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
+          else reject(new Error(`Resend API error (${res.statusCode}): ${JSON.stringify(parsed)}`));
+        } catch(e) { reject(new Error(`Failed to parse Resend response: ${data}`)); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
 
 async function sendPostNotification(toEmail, clientName, postText, postUrl, imageUrl) {
-  if (!mailTransporter) {
-    console.log('⚠ Email not configured — skipping notification');
-    return;
-  }
   try {
-    await mailTransporter.sendMail({
-      from: `"AutoPost Pro" <${EMAIL_USER}>`,
-      to: toEmail,
-      subject: `New post live: ${clientName}`,
-      html: `
-        <div style="font-family:sans-serif;max-width:480px">
-          <h2 style="color:#c9a84c;margin-bottom:4px">${clientName} just posted</h2>
-          <p style="font-size:15px;line-height:1.6;color:#333;white-space:pre-wrap">${postText}</p>
-          ${imageUrl ? `<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:12px 0">` : ''}
-          <p style="margin-top:16px">
-            <a href="${postUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">View & Share on Facebook →</a>
-          </p>
-        </div>
-      `
-    });
+    const html = `
+      <div style="font-family:sans-serif;max-width:480px">
+        <h2 style="color:#c9a84c;margin-bottom:4px">${clientName} just posted</h2>
+        <p style="font-size:15px;line-height:1.6;color:#333;white-space:pre-wrap">${postText}</p>
+        ${imageUrl ? `<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:12px 0">` : ''}
+        <p style="margin-top:16px">
+          <a href="${postUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">View & Share on Facebook →</a>
+        </p>
+      </div>
+    `;
+    await sendEmail(toEmail, `New post live: ${clientName}`, html);
     console.log(`📧 Notification sent to ${toEmail}`);
   } catch (err) {
     console.error(`⚠ Email notification failed:`, err.message);
@@ -807,6 +828,111 @@ function scheduleChecker() {
   console.log(`  Blog: Tuesdays at ${String(BLOG_PUBLISH_HOUR).padStart(2,'0')}:${String(BLOG_PUBLISH_MINUTE).padStart(2,'0')}`);
 }
 
+// ─── CUSTOMER REPLY DRAFTER (drafts a reply, holds for your approval) ───────
+const pendingReplies = {}; // in-memory store: { id: { formData, draftEmail, draftSms, createdAt } }
+const APPROVAL_BASE_URL = process.env.APPROVAL_BASE_URL || 'https://autopost-pro-pzds.onrender.com';
+
+function generateReplyId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+async function draftCustomerReply(formData) {
+  const name = formData.name || 'there';
+  const business = formData.business || 'your business';
+
+  const prompt = `You are drafting a reply on behalf of Dominion Web Design Pro, a web design service in Dallas, TX, responding to a new lead who just requested a free website preview/quote.
+
+Customer details: Name: ${name}, Business: ${business}.
+
+Write two things:
+1. A short, warm EMAIL reply (3-4 sentences) thanking them, confirming we'll follow up within 24 hours, and mentioning we'll prepare a free preview of what their site could look like.
+2. A short SMS reply (under 300 characters) with the same warm tone, more brief.
+
+Respond in ONLY this exact format:
+EMAIL: [email reply text]
+SMS: [sms reply text]`;
+
+  const response = await callAnthropicLongForm(prompt, 400);
+  const emailMatch = response.match(/^EMAIL:\s*([\s\S]*?)(?=^SMS:|$)/im);
+  const smsMatch = response.match(/^SMS:\s*(.+)$/im);
+
+  return {
+    draftEmail: emailMatch ? emailMatch[1].trim() : '',
+    draftSms: smsMatch ? smsMatch[1].trim() : '',
+  };
+}
+
+async function notifyDraftForApproval(replyId, formData, draft) {
+  const approveUrl = `${APPROVAL_BASE_URL}/approve-reply?id=${replyId}`;
+  const rejectUrl = `${APPROVAL_BASE_URL}/reject-reply?id=${replyId}`;
+
+  // Send via email (richer formatting, includes clickable approve button)
+  try {
+    const html = `
+      <div style="font-family:sans-serif;max-width:480px">
+        <h3>New lead: ${formData.name || 'Unknown'} (${formData.business || 'No business listed'})</h3>
+        <p><strong>Draft email reply:</strong></p>
+        <p style="background:#f5f5f5;padding:12px;border-radius:6px">${draft.draftEmail}</p>
+        <p><strong>Draft SMS reply:</strong></p>
+        <p style="background:#f5f5f5;padding:12px;border-radius:6px">${draft.draftSms}</p>
+        <a href="${approveUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600;margin-right:10px">✅ Approve & Send</a>
+        <a href="${rejectUrl}" style="background:#888;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">❌ Discard</a>
+      </div>
+    `;
+    await sendEmail(EMAIL_USER, `Approve reply to ${formData.name || 'new lead'}?`, html);
+    console.log(`📧 Draft reply sent for approval (ID: ${replyId})`);
+  } catch (err) {
+    console.error('⚠ Failed to send draft approval email:', err.message);
+  }
+
+  // Also text a short approval notice if Twilio is configured
+  if (twilioClient && TWILIO_FROM_NUMBER && NOTIFY_PHONE_NUMBER) {
+    try {
+      await twilioClient.messages.create({
+        body: `New lead from ${formData.name || 'someone'}. A reply draft is ready — check your email to approve & send.`,
+        from: TWILIO_FROM_NUMBER,
+        to: NOTIFY_PHONE_NUMBER,
+      });
+    } catch (err) {
+      console.error('⚠ Failed to send approval SMS notice:', err.message);
+    }
+  }
+}
+
+async function sendApprovedReply(replyId) {
+  const pending = pendingReplies[replyId];
+  if (!pending) return { ok: false, message: 'Reply not found or already handled.' };
+
+  const { formData, draftEmail, draftSms } = pending;
+
+  // Send email to the customer, if we have their email
+  if (formData.email) {
+    try {
+      const htmlBody = `<div style="font-family:sans-serif;white-space:pre-wrap">${draftEmail}</div>`;
+      await sendEmail(formData.email, `Thanks for reaching out, ${formData.name || ''}!`, htmlBody);
+    } catch (err) {
+      console.error('⚠ Failed to send approved email to customer:', err.message);
+    }
+  }
+
+  // Send SMS to the customer, if we have their phone
+  if (formData.phone && twilioClient && TWILIO_FROM_NUMBER) {
+    try {
+      await twilioClient.messages.create({
+        body: draftSms,
+        from: TWILIO_FROM_NUMBER,
+        to: formData.phone,
+      });
+    } catch (err) {
+      console.error('⚠ Failed to send approved SMS to customer:', err.message);
+    }
+  }
+
+  delete pendingReplies[replyId];
+  return { ok: true, message: 'Reply sent to customer.' };
+}
+
+
 // ─── HTTP SERVER (keeps Render.com free tier alive) ───────────────────────────
 const http = require('http');
 
@@ -842,12 +968,35 @@ http.createServer((req, res) => {
     res.end(JSON.stringify({ status: 'publishing blog post' }));
 
   } else if (req.url === '/lead' && req.method === 'POST') {
-    readJsonBody(req).then(formData => {
+    readJsonBody(req).then(async formData => {
       console.log(`📩 New lead received:`, JSON.stringify(formData));
-      sendLeadSms(formData);
+      sendLeadSms(formData); // existing instant notification to you
+
+      try {
+        const draft = await draftCustomerReply(formData);
+        const replyId = generateReplyId();
+        pendingReplies[replyId] = { formData, draftEmail: draft.draftEmail, draftSms: draft.draftSms, createdAt: Date.now() };
+        await notifyDraftForApproval(replyId, formData, draft);
+      } catch (err) {
+        console.error('⚠ Failed to draft customer reply:', err.message);
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'received' }));
     });
+
+  } else if (req.url.startsWith('/approve-reply') && req.method === 'GET') {
+    const replyId = new URL(req.url, 'http://x').searchParams.get('id');
+    sendApprovedReply(replyId).then(result => {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>${result.ok ? '✅ Sent!' : '⚠ ' + result.message}</h2></body></html>`);
+    });
+
+  } else if (req.url.startsWith('/reject-reply') && req.method === 'GET') {
+    const replyId = new URL(req.url, 'http://x').searchParams.get('id');
+    delete pendingReplies[replyId];
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>Reply discarded.</h2></body></html>`);
 
   } else if (req.url === '/health') {
     res.end(JSON.stringify({ status: 'ok', clients: CLIENTS.length, time: new Date().toISOString() }));
