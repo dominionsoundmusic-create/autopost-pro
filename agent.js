@@ -807,121 +807,6 @@ function scheduleChecker() {
   console.log(`  Blog: Tuesdays at ${String(BLOG_PUBLISH_HOUR).padStart(2,'0')}:${String(BLOG_PUBLISH_MINUTE).padStart(2,'0')}`);
 }
 
-// ─── CUSTOMER REPLY DRAFTER (drafts a reply, holds for your approval) ───────
-const pendingReplies = {}; // in-memory store: { id: { formData, draftEmail, draftSms, createdAt } }
-const APPROVAL_BASE_URL = process.env.APPROVAL_BASE_URL || 'https://autopost-pro-pzds.onrender.com';
-
-function generateReplyId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-async function draftCustomerReply(formData) {
-  const name = formData.name || 'there';
-  const business = formData.business || 'your business';
-
-  const prompt = `You are drafting a reply on behalf of Dominion Web Design Pro, a web design service in Dallas, TX, responding to a new lead who just requested a free website preview/quote.
-
-Customer details: Name: ${name}, Business: ${business}.
-
-Write two things:
-1. A short, warm EMAIL reply (3-4 sentences) thanking them, confirming we'll follow up within 24 hours, and mentioning we'll prepare a free preview of what their site could look like.
-2. A short SMS reply (under 300 characters) with the same warm tone, more brief.
-
-Respond in ONLY this exact format:
-EMAIL: [email reply text]
-SMS: [sms reply text]`;
-
-  const response = await callAnthropicLongForm(prompt, 400);
-  const emailMatch = response.match(/^EMAIL:\s*([\s\S]*?)(?=^SMS:|$)/im);
-  const smsMatch = response.match(/^SMS:\s*(.+)$/im);
-
-  return {
-    draftEmail: emailMatch ? emailMatch[1].trim() : '',
-    draftSms: smsMatch ? smsMatch[1].trim() : '',
-  };
-}
-
-async function notifyDraftForApproval(replyId, formData, draft) {
-  const approveUrl = `${APPROVAL_BASE_URL}/approve-reply?id=${replyId}`;
-  const rejectUrl = `${APPROVAL_BASE_URL}/reject-reply?id=${replyId}`;
-
-  // Send via email (richer formatting, includes clickable approve button)
-  if (mailTransporter && EMAIL_USER) {
-    try {
-      await mailTransporter.sendMail({
-        from: `"AutoPost Pro" <${EMAIL_USER}>`,
-        to: EMAIL_USER, // sends to your own inbox for review
-        subject: `Approve reply to ${formData.name || 'new lead'}?`,
-        html: `
-          <div style="font-family:sans-serif;max-width:480px">
-            <h3>New lead: ${formData.name || 'Unknown'} (${formData.business || 'No business listed'})</h3>
-            <p><strong>Draft email reply:</strong></p>
-            <p style="background:#f5f5f5;padding:12px;border-radius:6px">${draft.draftEmail}</p>
-            <p><strong>Draft SMS reply:</strong></p>
-            <p style="background:#f5f5f5;padding:12px;border-radius:6px">${draft.draftSms}</p>
-            <a href="${approveUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600;margin-right:10px">✅ Approve & Send</a>
-            <a href="${rejectUrl}" style="background:#888;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">❌ Discard</a>
-          </div>
-        `
-      });
-      console.log(`📧 Draft reply sent for approval (ID: ${replyId})`);
-    } catch (err) {
-      console.error('⚠ Failed to send draft approval email:', err.message);
-    }
-  }
-
-  // Also text a short approval notice if Twilio is configured
-  if (twilioClient && TWILIO_FROM_NUMBER && NOTIFY_PHONE_NUMBER) {
-    try {
-      await twilioClient.messages.create({
-        body: `New lead from ${formData.name || 'someone'}. A reply draft is ready — check your email to approve & send.`,
-        from: TWILIO_FROM_NUMBER,
-        to: NOTIFY_PHONE_NUMBER,
-      });
-    } catch (err) {
-      console.error('⚠ Failed to send approval SMS notice:', err.message);
-    }
-  }
-}
-
-async function sendApprovedReply(replyId) {
-  const pending = pendingReplies[replyId];
-  if (!pending) return { ok: false, message: 'Reply not found or already handled.' };
-
-  const { formData, draftEmail, draftSms } = pending;
-
-  // Send email to the customer, if we have their email
-  if (formData.email && mailTransporter && EMAIL_USER) {
-    try {
-      await mailTransporter.sendMail({
-        from: `"Dominion Web Design Pro" <${EMAIL_USER}>`,
-        to: formData.email,
-        subject: `Thanks for reaching out, ${formData.name || ''}!`,
-        text: draftEmail,
-      });
-    } catch (err) {
-      console.error('⚠ Failed to send approved email to customer:', err.message);
-    }
-  }
-
-  // Send SMS to the customer, if we have their phone
-  if (formData.phone && twilioClient && TWILIO_FROM_NUMBER) {
-    try {
-      await twilioClient.messages.create({
-        body: draftSms,
-        from: TWILIO_FROM_NUMBER,
-        to: formData.phone,
-      });
-    } catch (err) {
-      console.error('⚠ Failed to send approved SMS to customer:', err.message);
-    }
-  }
-
-  delete pendingReplies[replyId];
-  return { ok: true, message: 'Reply sent to customer.' };
-}
-
-
 // ─── HTTP SERVER (keeps Render.com free tier alive) ───────────────────────────
 const http = require('http');
 
@@ -957,35 +842,12 @@ http.createServer((req, res) => {
     res.end(JSON.stringify({ status: 'publishing blog post' }));
 
   } else if (req.url === '/lead' && req.method === 'POST') {
-    readJsonBody(req).then(async formData => {
+    readJsonBody(req).then(formData => {
       console.log(`📩 New lead received:`, JSON.stringify(formData));
-      sendLeadSms(formData); // existing instant notification to you
-
-      try {
-        const draft = await draftCustomerReply(formData);
-        const replyId = generateReplyId();
-        pendingReplies[replyId] = { formData, draftEmail: draft.draftEmail, draftSms: draft.draftSms, createdAt: Date.now() };
-        await notifyDraftForApproval(replyId, formData, draft);
-      } catch (err) {
-        console.error('⚠ Failed to draft customer reply:', err.message);
-      }
-
+      sendLeadSms(formData);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'received' }));
     });
-
-  } else if (req.url.startsWith('/approve-reply') && req.method === 'GET') {
-    const replyId = new URL(req.url, 'http://x').searchParams.get('id');
-    sendApprovedReply(replyId).then(result => {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>${result.ok ? '✅ Sent!' : '⚠ ' + result.message}</h2></body></html>`);
-    });
-
-  } else if (req.url.startsWith('/reject-reply') && req.method === 'GET') {
-    const replyId = new URL(req.url, 'http://x').searchParams.get('id');
-    delete pendingReplies[replyId];
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>Reply discarded.</h2></body></html>`);
 
   } else if (req.url === '/health') {
     res.end(JSON.stringify({ status: 'ok', clients: CLIENTS.length, time: new Date().toISOString() }));
