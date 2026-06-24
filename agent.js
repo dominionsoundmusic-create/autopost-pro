@@ -4,10 +4,189 @@
 
 const https = require('https');
 const nodemailer = require('nodemailer');
+const twilio = require('twilio');
 
-// ─── EMAIL NOTIFIER ────────────────────────────────────────────────────────────
+// ─── SMS NOTIFIER (Twilio) ────────────────────────────────────────────────────────────────────────────
 
-const EMAIL_USER = process.env.GMAIL_SENDER_USER; // kidstorybookssell@gmail.com (paid account, sends for both businesses)
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER;
+const NOTIFY_PHONE_NUMBER = process.env.NOTIFY_PHONE_NUMBER;
+
+const twilioClient = (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN)
+  ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+  : null;
+
+async function sendLeadSms(formData) {
+  if (!twilioClient || !TWILIO_FROM_NUMBER || !NOTIFY_PHONE_NUMBER) {
+    console.log('⚠ SMS not configured — skipping lead text notification');
+    return;
+  }
+  try {
+    const name = formData.name || 'Someone';
+    const business = formData.business ? ` (${formData.business})` : '';
+    const phone = formData.phone ? ` — ${formData.phone}` : '';
+    const body = `New lead on dominionwebdesignpro.com!\n${name}${business}${phone}\nCheck your email/sheet for full details.`;
+    await twilioClient.messages.create({ body, from: TWILIO_FROM_NUMBER, to: NOTIFY_PHONE_NUMBER });
+    console.log(`📱 Lead SMS sent to ${NOTIFY_PHONE_NUMBER}`);
+  } catch (err) {
+    console.error('⚠ SMS notification failed:', err.message);
+  }
+}
+
+// ─── BLOG AUTO-PUBLISHER (weekly SEO articles for dominionSoundmusic.com) ────
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const BLOG_REPO_OWNER = process.env.BLOG_REPO_OWNER || 'dominionsoundmusic-create';
+const BLOG_REPO_NAME = process.env.BLOG_REPO_NAME;
+const BLOG_REPO_BRANCH = process.env.BLOG_REPO_BRANCH || 'main';
+
+const BLOG_KEYWORD_CLUSTERS = [
+  { pillar: 'Memorial Songs', primary: 'how to write a memorial song for a parent', supporting: ['custom tribute song for funeral', 'memorial song ideas for grandmother', 'personalized song for someone who passed away', 'affordable memorial song service near me'] },
+  { pillar: 'Birthday Songs', primary: 'personalized birthday song for adults', supporting: ['custom birthday song for mom', 'how to make a custom birthday song', 'unique 50th birthday song gift idea', 'custom birthday song for wife'] },
+  { pillar: 'Wedding Songs', primary: 'custom first dance song written for us', supporting: ['personalized wedding song from our story', 'how to get a custom wedding song made', 'unique first dance song ideas', 'write a song about our love story'] },
+  { pillar: 'Business Jingles', primary: 'custom jingle for small business', supporting: ['how to get a jingle made for my business', 'affordable custom radio jingle', 'how much does a business jingle cost'] },
+  { pillar: 'Gospel Music', primary: 'contemporary gospel songs 2026', supporting: ['urban gospel music for worship service', 'gospel songs about overcoming hardship', 'uplifting gospel songs for hard times'] },
+  { pillar: 'R&B and Soul', primary: 'independent R&B artist new music', supporting: ['smooth R&B songs for late night', 'neo soul music independent artist', 'soulful R&B songs about heartbreak'] },
+  { pillar: 'Country Music', primary: 'independent country artist new song', supporting: ['country songs about small town life', 'country song about road trips', 'Texas country music independent artist'] },
+  { pillar: 'Latin Music', primary: 'bilingual Latin music independent artist', supporting: ['new Latin song release', 'Latin music for celebration', 'Spanish English crossover song'] },
+  { pillar: 'Music Distribution How-To', primary: 'how to distribute music on Spotify independently', supporting: ['how to release music without a record label', 'how to promote new music release on social media', 'how to get music on Spotify playlists independently'] },
+  { pillar: 'Buyer Guide', primary: 'best custom song service for memorials', supporting: ['custom song with preview before paying', 'what information do I need to provide for a custom song', 'is a custom song a good wedding gift'] },
+];
+
+function slugify(text) {
+  return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+}
+
+async function generateBlogArticle(cluster) {
+  const prompt = `Write an SEO-optimized blog article for Dominion Sound (independent music artist and custom song service, dominionSoundmusic.com).
+
+Primary keyword (must appear in the title, first paragraph, and 2-3 times naturally in the body): "${cluster.primary}"
+
+Supporting keywords (work in naturally where relevant, don't force them): ${cluster.supporting.join(', ')}
+
+Write 700-900 words. Structure: an engaging intro paragraph, 3-4 H2 subheadings with substantive content under each, and a closing paragraph with a soft call-to-action pointing to dominionSoundmusic.com's custom song services.
+
+Tone: warm, helpful, written for someone actually researching this topic — not generic SEO filler. Include genuinely useful, specific information, not vague platitudes.
+
+Respond in ONLY this exact format, nothing else:
+
+TITLE: [SEO-friendly article title, under 60 characters]
+
+META: [meta description, under 155 characters]
+
+---BODY---
+
+[full article body in clean HTML using <h2>, <p>, <ul>/<li> tags as appropriate — no <html>/<head>/<body> wrapper tags, just the content fragment]`;
+
+  const response = await callAnthropicLongForm(prompt, 2200);
+  const titleMatch = response.match(/^TITLE:\s*(.+)$/im);
+  const metaMatch = response.match(/^META:\s*(.+)$/im);
+  const bodyMatch = response.split('---BODY---')[1];
+  return {
+    title: titleMatch ? titleMatch[1].trim() : cluster.primary,
+    meta: metaMatch ? metaMatch[1].trim() : '',
+    body: bodyMatch ? bodyMatch.trim() : response,
+  };
+}
+
+function buildBlogPageHtml(article, slug) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${article.title} | Dominion Sound</title>
+<meta name="description" content="${article.meta}">
+<link rel="canonical" href="https://dominionsoundmusic.com/blog/${slug}.html">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e8e4dc;line-height:1.8;font-weight:300}
+.wrap{max-width:720px;margin:0 auto;padding:60px 24px 100px}
+.back{color:#c9a84c;text-decoration:none;font-size:13px;letter-spacing:1px;text-transform:uppercase}
+h1{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,5vw,44px);color:#fff;margin:24px 0 32px;font-weight:500;line-height:1.2}
+h2{font-family:'Cormorant Garamond',serif;font-size:26px;color:#c9a84c;margin:36px 0 16px;font-weight:500}
+p{margin-bottom:18px;font-size:16px;color:#cfc9bd}
+ul{margin:0 0 18px 22px;color:#cfc9bd}
+li{margin-bottom:8px}
+.cta{background:#161616;border:1px solid #c9a84c;border-radius:6px;padding:28px;margin-top:48px;text-align:center}
+.cta a{display:inline-block;margin-top:14px;background:#c9a84c;color:#0a0a0a;padding:13px 30px;border-radius:4px;text-decoration:none;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="../index.html" class="back">← Back to Dominion Sound</a>
+  <h1>${article.title}</h1>
+  ${article.body}
+  <div class="cta">
+    <p style="margin:0">Looking for a custom song made just for you?</p>
+    <a href="../index.html#custom-songs">Order a Custom Song →</a>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+async function commitFileToGitHub(path, content, commitMessage) {
+  if (!GITHUB_TOKEN || !BLOG_REPO_NAME) {
+    console.log('⚠ GitHub not configured — skipping blog publish');
+    return null;
+  }
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      message: commitMessage,
+      content: Buffer.from(content).toString('base64'),
+      branch: BLOG_REPO_BRANCH,
+    });
+    const req = https.request({
+      hostname: 'api.github.com',
+      path: `/repos/${BLOG_REPO_OWNER}/${BLOG_REPO_NAME}/contents/${path}`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `token ${GITHUB_TOKEN}`,
+        'User-Agent': 'AutoPost-Pro-Blog-Publisher',
+        'Content-Length': Buffer.byteLength(body),
+      }
+    }, res => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(parsed);
+          else reject(new Error(`GitHub API error (${res.statusCode}): ${JSON.stringify(parsed)}`));
+        } catch(e) { reject(new Error(`Failed to parse GitHub response: ${data}`)); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function publishWeeklyBlogPost() {
+  console.log(`\n[${new Date().toISOString()}] Running weekly blog publisher...`);
+  try {
+    const weekNum = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+    const cluster = BLOG_KEYWORD_CLUSTERS[weekNum % BLOG_KEYWORD_CLUSTERS.length];
+    console.log(`✍ Writing blog article for pillar: ${cluster.pillar}...`);
+    const article = await generateBlogArticle(cluster);
+    const slug = slugify(article.title);
+    const html = buildBlogPageHtml(article, slug);
+    const result = await commitFileToGitHub(`blog/${slug}.html`, html, `Add blog post: ${article.title}`);
+    if (result) {
+      console.log(`✅ Published blog post: ${article.title} (blog/${slug}.html)`);
+    }
+  } catch (err) {
+    console.error('❌ Blog publishing failed:', err.message);
+  }
+}
+
+// ─── EMAIL NOTIFIER ──────────────────────────────────────────────────────────────────────────────
+
+const EMAIL_USER = process.env.GMAIL_SENDER_USER;
 const EMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
 
 const mailTransporter = (EMAIL_USER && EMAIL_APP_PASSWORD) ? nodemailer.createTransport({
@@ -31,7 +210,7 @@ async function sendPostNotification(toEmail, clientName, postText, postUrl, imag
           <p style="font-size:15px;line-height:1.6;color:#333;white-space:pre-wrap">${postText}</p>
           ${imageUrl ? `<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:12px 0">` : ''}
           <p style="margin-top:16px">
-            <a href="${postUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">View & Share on Facebook →</a>
+            <a href="${postUrl}" style="background:#c9a84c;color:#000;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:600">View &amp; Share on Facebook →</a>
           </p>
         </div>
       `
@@ -42,7 +221,7 @@ async function sendPostNotification(toEmail, clientName, postText, postUrl, imag
   }
 }
 
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// âââ CONFIG ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const PORT = process.env.PORT || 3000;
@@ -51,7 +230,7 @@ const PORT = process.env.PORT || 3000;
 const DOMINION_SOUND_RELEASES = [
   { title: "Every Chain is Broken", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--10F79009-F36F-4007-B40F530541F4F630--0--1261116--ArtistlyDesignml9ee1d836a8709c8ac5a9b74c9971f6.jpg" },
   { title: "Covered By Grace", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--0C92B59A-0A1B-4486-B1D3717C4B2419FB--0--1052852--ArtistlyDesignml9ec8c87b6a735f8f5bcfa05af4b2a3.jpg" },
-  { title: "Corazón de Cristal (Crystal Heart)", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--2DF2D710-81DC-43F4-93A7118003A9B51B--0--1038375--ArtistlyDesignml9eb7ed77ce71e9a3e37bae51121848.jpg" },
+  { title: "CorazÃ³n de Cristal (Crystal Heart)", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--2DF2D710-81DC-43F4-93A7118003A9B51B--0--1038375--ArtistlyDesignml9eb7ed77ce71e9a3e37bae51121848.jpg" },
   { title: "Fuego en la Noche (Fire in the Night)", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--5C46F37C-C501-47B5-882C2F8E9F0A542C--0--1248971--ArtistlyDesignml9eb7b60e37733a9286772a98968f6b.jpg" },
   { title: "Moonlight Serenade", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--97CB35C7-C299-4F5C-BC47285AE8E3A00E--0--1077660--ArtistlyDesignml9eb7000236710dbfefd4c6e2a9e16d.jpg" },
   { title: "Summer Breeze", cover: "https://s3.amazonaws.com/gather.fandalism.com/300x300-12820735--F5E3A054-DC7E-4EA1-BD9C3FFAE803FE95--0--1052496--ArtistlyDesignml9eb6f1da4b70b7988efb3a8aead97a.jpg" },
@@ -269,7 +448,7 @@ function bookCoverUrl(asin) {
   return `https://images-na.ssl-images-amazon.com/images/P/${asin}.jpg`;
 }
 
-// Cookbook titles — same catalog family, posted with cooking-focused copy instead of storytime framing
+// Cookbook titles â same catalog family, posted with cooking-focused copy instead of storytime framing
 const KIDSTORYBOOKS_COOKBOOKS = [
   { title: "Copper & Cane: The Elevated Southern Sweet Treats Cookbook", asin: "B0GWHM9SZX", category: "cookbooks" },
   { title: "Spoon & Silk: The Elevated Southern Pudding Cookbook", asin: "B0GVY2SJ3X", category: "cookbooks" },
@@ -323,7 +502,7 @@ const CLIENTS = [
     name: 'Kidstorybooks',
     fbPageId: process.env.KSB_PAGE_ID,
     fbToken: process.env.KSB_PAGE_TOKEN,
-    bio: 'We publish children\'s books for ages 2–12. Over 200 titles available on Amazon covering adventure, animals, bedtime, and learning. Shop at kidstorybooks.com.',
+    bio: 'We publish children\'s books for ages 2â12. Over 200 titles available on Amazon covering adventure, animals, bedtime, and learning. Shop at kidstorybooks.com.',
     website: 'kidstorybooks.com',
     notifyEmail: 'kidstorybookssell@gmail.com',
     topics: ['book_spotlight', 'cookbook_spotlight', 'parent_tip', 'engage'],
@@ -339,25 +518,25 @@ const CLIENTS = [
   // { id: 'client-abc', name: '...', fbPageId: '...', fbToken: '...', bio: '...', website: '...', notifyEmail: '...', topics: [...], postTimes: [{hour:9,minute:0}] }
 ];
 
-// Topic rotation — keeps posts fresh
+// Topic rotation â keeps posts fresh
 const TOPIC_GUIDES = {
   music:        'Promote Dominion Sound music on Spotify and Apple Music. Pick a genre (gospel, R&B, country, or Latin) and encourage fans to stream.',
-  custom_song:  'Pitch custom song services. Keep it warm and personal — mention a real use case like a birthday or wedding. Include the price and website.',
-  engage:       'Ask fans a fun question about music, their favorite song, or a memory tied to music. No selling — just connection.',
+  custom_song:  'Pitch custom song services. Keep it warm and personal â mention a real use case like a birthday or wedding. Include the price and website.',
+  engage:       'Ask fans a fun question about music, their favorite song, or a memory tied to music. No selling â just connection.',
   release:      'Announce or remind fans about recent releases. Sound excited and genuine.',
   book_spotlight: 'Spotlight a specific children\'s book from the catalog. Mention it\'s available on Amazon at kidstorybooks.com. Warm, parent-friendly tone.',
-  cookbook_spotlight: 'Spotlight a specific cookbook from the catalog. This is a cooking/recipe book, NOT a children\'s storybook — write with a food-lover, kitchen-inspired tone (mouth-watering, appetite-driving), not a storytime tone. Mention it\'s available on Amazon at kidstorybooks.com.',
-  parent_tip:   'Share a fun reading tip or benefit of reading to children. Soft sell — mention kidstorybooks.com at the end.',
+  cookbook_spotlight: 'Spotlight a specific cookbook from the catalog. This is a cooking/recipe book, NOT a children\'s storybook â write with a food-lover, kitchen-inspired tone (mouth-watering, appetite-driving), not a storytime tone. Mention it\'s available on Amazon at kidstorybooks.com.',
+  parent_tip:   'Share a fun reading tip or benefit of reading to children. Soft sell â mention kidstorybooks.com at the end.',
 };
 
-// ─── AI POST WRITER ───────────────────────────────────────────────────────────
+// âââ AI POST WRITER âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function callAnthropic(prompt) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
-      system: 'You write authentic, warm Facebook posts for small businesses. Use relevant emojis. Keep posts under 250 characters. End with a call to action. Output ONLY the post text — no quotes, no labels.',
+      system: 'You write authentic, warm Facebook posts for small businesses. Use relevant emojis. Keep posts under 250 characters. End with a call to action. Output ONLY the post text â no quotes, no labels.',
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -389,7 +568,7 @@ function callAnthropic(prompt) {
   });
 }
 
-// ─── FACEBOOK POSTER ──────────────────────────────────────────────────────────
+// âââ FACEBOOK POSTER ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 // If imageUrl is provided, posts as a photo with caption (via /photos endpoint).
 // Otherwise posts as plain text (via /feed endpoint).
@@ -428,7 +607,7 @@ function postToFacebook(pageId, token, message, imageUrl) {
   });
 }
 
-// ─── MAIN POSTING LOOP ────────────────────────────────────────────────────────
+// âââ MAIN POSTING LOOP ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 // If slotInfo is provided, only post for clients whose postTimes include this slot.
 // If slotInfo is omitted (e.g. manual /run trigger), post for ALL clients immediately.
@@ -445,12 +624,12 @@ async function runPostingAgent(slotInfo) {
     if (!dueClients.includes(client)) continue;
 
     if (!client.fbPageId || !client.fbToken) {
-      console.log(`⚠ Skipping ${client.name} — missing page ID or token`);
+      console.log(`â  Skipping ${client.name} â missing page ID or token`);
       continue;
     }
 
     try {
-      // Pick a topic — rotates by day AND by which numbered slot of the day this is
+      // Pick a topic â rotates by day AND by which numbered slot of the day this is
       const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
       const slotIndex = client.postTimes.findIndex(t => slotInfo && t.hour === slotInfo.hour && t.minute === slotInfo.minute);
       const topicIndex = (dayOfYear + Math.max(slotIndex, 0)) % client.topics.length;
@@ -469,11 +648,11 @@ async function runPostingAgent(slotInfo) {
         imageUrl = selectedItem.cover;
       } else if (client.id === 'kidstorybooks' && topic === 'book_spotlight') {
         selectedItem = KIDSTORYBOOKS_CATALOG[(dayOfYear + Math.max(slotIndex, 0)) % KIDSTORYBOOKS_CATALOG.length];
-        extraContext = `\nFeature this specific book by title: "${selectedItem.title}" (category: ${selectedItem.category}). Make the post about this book specifically — describe what a parent/child would enjoy about it.`;
+        extraContext = `\nFeature this specific book by title: "${selectedItem.title}" (category: ${selectedItem.category}). Make the post about this book specifically â describe what a parent/child would enjoy about it.`;
         imageUrl = bookCoverUrl(selectedItem.asin);
       } else if (client.id === 'kidstorybooks' && topic === 'cookbook_spotlight') {
         selectedItem = KIDSTORYBOOKS_COOKBOOKS[(dayOfYear + Math.max(slotIndex, 0)) % KIDSTORYBOOKS_COOKBOOKS.length];
-        extraContext = `\nFeature this specific cookbook by title: "${selectedItem.title}". This is a cooking/recipe book — make the post about this cookbook specifically, with food-focused, appetite-driving language, not a children's story tone.`;
+        extraContext = `\nFeature this specific cookbook by title: "${selectedItem.title}". This is a cooking/recipe book â make the post about this cookbook specifically, with food-focused, appetite-driving language, not a children's story tone.`;
         imageUrl = bookCoverUrl(selectedItem.asin);
       }
 
@@ -483,14 +662,14 @@ Website: ${client.website}
 Today's direction: ${topicGuide}${extraContext}
 Make it authentic, warm, and human.`;
 
-      console.log(`✍ Writing post for ${client.name} (topic: ${topic}${selectedItem ? ', featuring: ' + selectedItem.title : ''})...`);
+      console.log(`â Writing post for ${client.name} (topic: ${topic}${selectedItem ? ', featuring: ' + selectedItem.title : ''})...`);
       const postText = await callAnthropic(prompt);
       if (!postText) throw new Error('Empty post from AI');
-      console.log(`📝 Post: ${postText}`);
+      console.log(`ð Post: ${postText}`);
 
       const result = await postToFacebook(client.fbPageId, client.fbToken, postText, imageUrl);
       if (result.id) {
-        console.log(`✅ Posted to ${client.name}${imageUrl ? ' (with cover art)' : ''} — Post ID: ${result.id}`);
+        console.log(`â Posted to ${client.name}${imageUrl ? ' (with cover art)' : ''} â Post ID: ${result.id}`);
 
         // Build a viewable Facebook URL and email a notification so it's easy to find & share
         const postIdOnly = result.id.includes('_') ? result.id.split('_')[1] : result.id;
@@ -500,11 +679,11 @@ Make it authentic, warm, and human.`;
           await sendPostNotification(client.notifyEmail, client.name, postText, postUrl, imageUrl);
         }
       } else {
-        console.log(`❌ Facebook error for ${client.name}:`, result.error?.message || JSON.stringify(result));
+        console.log(`â Facebook error for ${client.name}:`, result.error?.message || JSON.stringify(result));
       }
 
     } catch (err) {
-      console.error(`❌ Error for ${client.name}:`, err.message);
+      console.error(`â Error for ${client.name}:`, err.message);
     }
 
     // Wait 3 seconds between clients to be polite to APIs
@@ -514,17 +693,37 @@ Make it authentic, warm, and human.`;
   console.log(`[${new Date().toISOString()}] Agent run complete.\n`);
 }
 
+
 // ─── SCHEDULER — checks every minute, fires for any client scheduled at this minute ──
 
 let lastCheckedMinute = null;
+let lastBlogCheckDate = null; // tracks the date string of the last blog publish, prevents double-firing
+
+// Blog publishes every Tuesday at 10:00 AM
+const BLOG_PUBLISH_DAY = 2; // 0=Sunday, 1=Monday, 2=Tuesday...
+const BLOG_PUBLISH_HOUR = 10;
+const BLOG_PUBLISH_MINUTE = 0;
 
 function scheduleChecker() {
   setInterval(() => {
     const now = new Date();
     const key = `${now.getHours()}:${now.getMinutes()}`;
-    if (key === lastCheckedMinute) return; // already handled this minute
-    lastCheckedMinute = key;
-    runPostingAgent({ hour: now.getHours(), minute: now.getMinutes() });
+    if (key !== lastCheckedMinute) {
+      lastCheckedMinute = key;
+      runPostingAgent({ hour: now.getHours(), minute: now.getMinutes() });
+    }
+
+    // Weekly blog check — independent of the per-minute post scheduler above
+    const todayKey = now.toDateString();
+    if (
+      now.getDay() === BLOG_PUBLISH_DAY &&
+      now.getHours() === BLOG_PUBLISH_HOUR &&
+      now.getMinutes() === BLOG_PUBLISH_MINUTE &&
+      todayKey !== lastBlogCheckDate
+    ) {
+      lastBlogCheckDate = todayKey;
+      publishWeeklyBlogPost();
+    }
   }, 30 * 1000); // check twice a minute to avoid missing the exact minute
 
   // Log the full schedule on startup so it's easy to verify in the logs
@@ -533,16 +732,49 @@ function scheduleChecker() {
     const times = client.postTimes.map(t => `${String(t.hour).padStart(2,'0')}:${String(t.minute).padStart(2,'0')}`).join(', ');
     console.log(`  ${client.name}: ${times}`);
   }
+  console.log(`  Blog: Tuesdays at ${String(BLOG_PUBLISH_HOUR).padStart(2,'0')}:${String(BLOG_PUBLISH_MINUTE).padStart(2,'0')}`);
 }
 
-// ─── HTTP SERVER (keeps Render.com free tier alive) ───────────────────────────
+// ─── HTTP SERVER (keeps Render.com free tier alive) ────────────────────────────────────────────────────
 
 const http = require('http');
 
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => data += chunk);
+    req.on('end', () => {
+      try { resolve(data ? JSON.parse(data) : {}); }
+      catch(e) { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
 http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.url === '/run' && req.method === 'POST') {
     runPostingAgent();
     res.end(JSON.stringify({ status: 'running' }));
+  } else if (req.url === '/run-blog' && req.method === 'POST') {
+    publishWeeklyBlogPost();
+    res.end(JSON.stringify({ status: 'publishing blog post' }));
+  } else if (req.url === '/lead' && req.method === 'POST') {
+    readJsonBody(req).then(formData => {
+      console.log(`📩 New lead received:`, JSON.stringify(formData));
+      sendLeadSms(formData);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'received' }));
+    });
   } else if (req.url === '/health') {
     res.end(JSON.stringify({ status: 'ok', clients: CLIENTS.length, time: new Date().toISOString() }));
   } else {
@@ -552,8 +784,6 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
   console.log(`AutoPost Pro server running on port ${PORT}`);
   scheduleChecker();
-
-  // Run immediately on startup (for testing)
   if (process.env.RUN_ON_START === 'true') {
     setTimeout(runPostingAgent, 2000);
   }
