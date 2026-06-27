@@ -576,6 +576,21 @@ const CLIENTS = [
       { hour: 17, minute: 0 },
       { hour: 20, minute: 0 },
     ],
+  },
+  {
+    id: 'webdesignpro',
+    name: 'Dominion Web Design Pro',
+    fbPageId: process.env.WDP_PAGE_ID,
+    fbToken: process.env.WDP_PAGE_TOKEN,
+    bio: 'Dominion Web Design Pro builds affordable, professional websites for small businesses across Texas. We help local businesses get found online — especially ones that don\'t have a website yet or have an outdated one. We serve towns and cities across the state, including Gilmer, Big Sandy, and the wider East Texas region, with local-focused web design that helps businesses get found by nearby customers searching online.',
+    website: 'dominionwebdesignpro.com',
+    notifyEmail: 'dominionsoundmusic@gmail.com',
+    topics: ['web_design_tip', 'why_website_matters', 'city_spotlight', 'showcase', 'service_promo'],
+    postTimes: [
+      { hour: 9, minute: 30 },
+      { hour: 14, minute: 30 },
+      { hour: 19, minute: 30 },
+    ],
   }
   // Add client businesses here as they sign up:
   // { id: 'client-abc', name: '...', fbPageId: '...', fbToken: '...', bio: '...', website: '...', notifyEmail: '...', topics: [...], postTimes: [{hour:9,minute:0}] }
@@ -590,6 +605,11 @@ const TOPIC_GUIDES = {
   book_spotlight: 'Spotlight a specific children\'s book from the catalog. Mention it\'s available on Amazon at kidstorybooks.com. Warm, parent-friendly tone.',
   cookbook_spotlight: 'Spotlight a specific cookbook from the catalog. This is a cooking/recipe book, NOT a children\'s storybook — write with a food-lover, kitchen-inspired tone (mouth-watering, appetite-driving), not a storytime tone. Mention it\'s available on Amazon at kidstorybooks.com.',
   parent_tip:   'Share a fun reading tip or benefit of reading to children. Soft sell — mention kidstorybooks.com at the end.',
+  web_design_tip: 'Share one practical, genuinely useful website or local-SEO tip for small business owners (e.g. claiming a Google Business Profile, having a clear phone number on the homepage, page load speed). Friendly, helpful tone — not a hard sell. Mention dominionwebdesignpro.com at the end.',
+  why_website_matters: 'Make a short, punchy case for why a small business needs a website today — focus on one specific angle (e.g. customers searching on their phone, looking more established than competitors, being found outside business hours). End with a soft call to action toward dominionwebdesignpro.com.',
+  city_spotlight: 'Pick ONE specific real town or city in Texas (vary it each time — small towns and bigger cities both work, e.g. Gilmer, Big Sandy, Tyler, Longview, Gladewater, Cedar Park). Share one genuinely interesting, true piece of that town\'s history, culture, or local color. Then connect it naturally to why a local business in that town benefits from having a real web presence — echo the spirit of the town (e.g. a town built on being found/visited connects to being found online). Keep it warm and specific, not generic. End with a soft mention of dominionwebdesignpro.com. Do not invent facts — only use well-known, genuinely true details about the town.',
+  showcase: 'Highlight the kind of website Dominion Web Design Pro builds — describe a feature or result (e.g. mobile-friendly design, fast load times, a lead capture form) in a way that shows quality and value, without naming a specific real client unless one is provided. End with dominionwebdesignpro.com.',
+  service_promo: 'Promote Dominion Web Design Pro\'s services directly — pricing tiers, what\'s included, or a limited-time offer if one is provided. Confident but not pushy. End with a clear next step (visit dominionwebdesignpro.com or message the page).',
 };
 
 // ─── AI POST WRITER ───────────────────────────────────────────────────────────
