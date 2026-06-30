@@ -591,7 +591,7 @@ const CLIENTS = [
       { hour: 14, minute: 30 },
       { hour: 19, minute: 30 },
     ],
-  }
+  },
   {
     id: 'aivoiceagentpros',
     name: 'AI Voice Agent Pros',
