@@ -592,8 +592,21 @@ const CLIENTS = [
       { hour: 19, minute: 30 },
     ],
   }
+  {
+    id: 'aivoiceagentpros',
+    name: 'AI Voice Agent Pros',
+    fbPageId: process.env.AVAP_PAGE_ID,
+    fbToken: process.env.AVAP_PAGE_TOKEN,
+    bio: 'AI Voice Agent Pros helps Texas service businesses never miss a call. We provide AI voice agents, social media automation, and CRM services.',
+    website: 'https://aivoiceagentpros.com',
+    topics: ['AI voice agents for small business', 'never miss a customer call', 'AI receptionist for contractors', 'automated appointment booking Texas', 'AI phone answering service', 'small business automation Texas', 'CRM for service businesses', 'social media automation for local business'],
+    postTimes: [
+      { hour: 8, minute: 0 },
+      { hour: 13, minute: 0 },
+      { hour: 18, minute: 0 },
+    ],
+  },
   // Add client businesses here as they sign up:
-  // { id: 'client-abc', name: '...', fbPageId: '...', fbToken: '...', bio: '...', website: '...', notifyEmail: '...', topics: [...], postTimes: [{hour:9,minute:0}] }
 ];
 
 // Topic rotation — keeps posts fresh
