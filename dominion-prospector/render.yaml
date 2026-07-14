@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: dominion-prospector
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: GHL_API_KEY
+        value: pit-88ed5c87-1cdc-4eef-a7e0-42e6aaa7b855
+      - key: GHL_LOCATION_ID
+        value: T2jYdY6yKrpGB5DjiWqp
+      - key: GOOGLE_PLACES_API_KEY
+        value: YOUR_GOOGLE_PLACES_API_KEY
+      - key: TWILIO_ACCOUNT_SID
+        value: YOUR_TWILIO_SID
+      - key: TWILIO_AUTH_TOKEN
+        value: YOUR_TWILIO_AUTH_TOKEN
+      - key: TWILIO_PHONE
+        value: +19033005683

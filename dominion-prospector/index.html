@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dominion Prospector</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;}
+header{background:#111;border-bottom:2px solid #c9a84c;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.3rem;font-weight:800;}.header-sub{color:#c9a84c;font-size:.85rem;}
+.status-bar{background:#1a1a1a;padding:10px 24px;display:flex;gap:20px;font-size:.82rem;}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+.dot-green{background:#4ade80;}.dot-red{background:#f87171;}.dot-yellow{background:#fbbf24;}
+.container{max-width:1000px;margin:0 auto;padding:24px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;}
+.card{background:#111;border:1px solid #222;border-radius:10px;padding:24px;}
+.card h2{font-size:1rem;font-weight:700;color:#c9a84c;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;}
+select,input{width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:10px 12px;border-radius:6px;font-size:.9rem;margin-bottom:12px;}
+select:focus,input:focus{outline:none;border-color:#c9a84c;}
+.btn{width:100%;background:#c9a84c;color:#0a0a0a;font-weight:700;padding:12px;border:none;border-radius:6px;font-size:.95rem;cursor:pointer;}
+.btn:hover{background:#b8943a;}
+.btn-outline{background:transparent;border:2px solid #c9a84c;color:#c9a84c;}
+.btn-outline:hover{background:#c9a84c;color:#0a0a0a;}
+.btn-red{background:#ef4444;color:#fff;}
+.results{background:#111;border:1px solid #222;border-radius:10px;padding:24px;}
+.results h2{font-size:1rem;font-weight:700;color:#c9a84c;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;}
+.result-item{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.result-info h3{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.result-info p{font-size:.82rem;color:#888;}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.badge{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;}
+.badge-red{background:#7f1d1d;color:#fca5a5;}
+.badge-yellow{background:#78350f;color:#fcd34d;}
+.badge-green{background:#14532d;color:#86efac;}
+.badge-blue{background:#1e3a5f;color:#93c5fd;}
+.result-actions{display:flex;gap:8px;}
+.btn-sm{padding:8px 14px;font-size:.8rem;border-radius:6px;border:none;cursor:pointer;font-weight:700;}
+.btn-sms{background:#c9a84c;color:#0a0a0a;}
+.btn-ghl{background:#1e3a5f;color:#93c5fd;}
+.empty{text-align:center;color:#555;padding:40px;font-size:.9rem;}
+.log{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px;padding:16px;height:200px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:#4ade80;margin-top:16px;}
+.auto-section{background:#111;border:1px solid #222;border-radius:10px;padding:24px;margin-bottom:24px;}
+.auto-section h2{font-size:1rem;font-weight:700;color:#c9a84c;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.auto-section p{font-size:.85rem;color:#888;margin-bottom:16px;line-height:1.6;}
+.flex{display:flex;gap:12px;}
+.flex .btn{flex:1;}
+@media(max-width:600px){.grid{grid-template-columns:1fr;}.flex{flex-direction:column;}}
+</style>
+</head>
+<body>
+<header>
+<div>
+<h1>⚡ Dominion Prospector</h1>
+<div class="header-sub">Automated Lead Finder — Powered by Dominion AI</div>
+</div>
+<div id="statusIndicator" style="font-size:.82rem;color:#888;">Checking status...</div>
+</header>
+
+<div class="status-bar" id="statusBar">
+<span><span class="status-dot dot-yellow"></span>Loading...</span>
+</div>
+
+<div class="container">
+
+<div class="auto-section">
+<h2>🤖 Auto Prospector</h2>
+<p>Runs automatically every day at 9am CST. Searches 3 random cities and 3 industries, finds businesses with no website, adds them to GHL, and fires Sarah's outreach SMS (once A2P is approved). You can also trigger it manually right now.</p>
+<div class="flex">
+<button class="btn" onclick="runAuto()">▶ Run Auto Prospect Now</button>
+<button class="btn btn-outline" onclick="checkStatus()">↻ Refresh Status</button>
+</div>
+<div class="log" id="autoLog">Ready. Click "Run Auto Prospect Now" to start...</div>
+</div>
+
+<div class="grid">
+<div class="card">
+<h2>🔍 Manual Search</h2>
+<p style="font-size:.82rem;color:#888;margin-bottom:12px;">Search a specific city and industry. You control who gets contacted.</p>
+<select id="industry">
+<option value="">Select Industry...</option>
+<option>restaurant</option>
+<option>hair salon</option>
+<option>auto repair</option>
+<option>plumber</option>
+<option>electrician</option>
+<option>landscaping</option>
+<option>cleaning service</option>
+<option>dentist</option>
+<option>chiropractor</option>
+<option>gym</option>
+<option>photographer</option>
+<option>florist</option>
+<option>bakery</option>
+<option>roofing contractor</option>
+<option>painter</option>
+<option>pest control</option>
+<option>dog groomer</option>
+<option>nail salon</option>
+<option>massage therapy</option>
+<option>church</option>
+<option>attorney</option>
+<option>insurance agent</option>
+<option>real estate agent</option>
+<option>moving company</option>
+<option>hvac contractor</option>
+<option>car wash</option>
+<option>daycare</option>
+</select>
+<input type="text" id="city" placeholder="City, State (e.g. Nacogdoches TX)">
+<button class="btn" onclick="manualSearch()">Search & Add to GHL</button>
+</div>
+
+<div class="card">
+<h2>📱 Manual Outreach</h2>
+<p style="font-size:.82rem;color:#888;margin-bottom:12px;">Send Sarah's first text to a specific business yourself.</p>
+<input type="text" id="outreachName" placeholder="Business Name">
+<input type="text" id="outreachPhone" placeholder="Phone Number (e.g. +19031234567)">
+<input type="text" id="outreachCity" placeholder="City, State">
+<button class="btn btn-outline" onclick="sendOutreach()">📤 Send Outreach SMS</button>
+</div>
+</div>
+
+<div class="results">
+<h2>📋 Prospects Found</h2>
+<div id="results"><div class="empty">Run a search to find prospects</div></div>
+</div>
+
+</div>
+
+<script>
+async function checkStatus() {
+  try {
+    const r = await fetch('/status');
+    const d = await r.json();
+    document.getElementById('statusBar').innerHTML = `
+      <span><span class="status-dot ${d.ghl ? 'dot-green' : 'dot-red'}"></span>GHL: ${d.ghl ? 'Connected' : 'Not Connected'}</span>
+      <span><span class="status-dot ${d.google ? 'dot-green' : 'dot-yellow'}"></span>Google Places: ${d.google ? 'Active' : 'Using Free OSM'}</span>
+      <span><span class="status-dot ${d.twilio ? 'dot-green' : 'dot-yellow'}"></span>SMS: ${d.a2pReady ? 'Ready' : 'Pending A2P Approval'}</span>
+    `;
+    document.getElementById('statusIndicator').textContent = d.status === 'running' ? '🟢 Online' : '🔴 Offline';
+  } catch(e) {
+    document.getElementById('statusBar').innerHTML = '<span><span class="status-dot dot-red"></span>Cannot connect to server</span>';
+  }
+}
+
+async function manualSearch() {
+  const industry = document.getElementById('industry').value;
+  const city = document.getElementById('city').value;
+  if (!industry || !city) return alert('Please select an industry and enter a city');
+  
+  document.getElementById('results').innerHTML = '<div class="empty">🔍 Searching... this may take 15-30 seconds</div>';
+  
+  try {
+    const r = await fetch('/prospect/manual', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({industry, city})
+    });
+    const d = await r.json();
+    renderResults(d.results || []);
+  } catch(e) {
+    document.getElementById('results').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+  }
+}
+
+async function sendOutreach() {
+  const phone = document.getElementById('outreachPhone').value;
+  const businessName = document.getElementById('outreachName').value;
+  const city = document.getElementById('outreachCity').value;
+  if (!phone || !businessName) return alert('Phone and business name required');
+  
+  try {
+    const r = await fetch('/prospect/outreach', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({phone, businessName, city})
+    });
+    const d = await r.json();
+    if (d.success) {
+      alert(d.sms?.pending ? 'SMS queued (pending A2P approval)' : 'SMS sent successfully!');
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+async function runAuto() {
+  const log = document.getElementById('autoLog');
+  log.textContent = '🚀 Starting auto prospect...\n';
+  
+  try {
+    const r = await fetch('/prospect/auto', {method:'POST'});
+    const d = await r.json();
+    log.textContent += '✅ ' + d.message + '\n';
+    log.textContent += 'Check your GHL contacts — new prospects are being added now.\n';
+    log.textContent += 'SMS outreach will fire automatically once A2P is approved.\n';
+  } catch(e) {
+    log.textContent += '❌ Error: ' + e.message;
+  }
+}
+
+function sendSMSToProspect(phone, name, city) {
+  document.getElementById('outreachPhone').value = phone;
+  document.getElementById('outreachName').value = name;
+  document.getElementById('outreachCity').value = city;
+  window.scrollTo(0, 300);
+  alert('Info filled in above — click Send Outreach SMS to contact this prospect.');
+}
+
+function renderResults(results) {
+  if (!results.length) {
+    document.getElementById('results').innerHTML = '<div class="empty">No new prospects found — they may already be in GHL or have websites</div>';
+    return;
+  }
+  const html = results.map(r => `
+    <div class="result-item">
+      <div class="result-info">
+        <h3>${r.name}</h3>
+        <p>${r.address || r.city} • ${r.industry} ${r.phone ? '• ' + r.phone : ''}</p>
+        <div class="badges">
+          ${!r.hasWebsite ? '<span class="badge badge-red">No Website</span>' : ''}
+          ${r.hasSocialOnly ? '<span class="badge badge-yellow">Social Only</span>' : ''}
+          ${r.addedToGHL ? '<span class="badge badge-green">Added to GHL</span>' : ''}
+          ${r.smsSent ? '<span class="badge badge-blue">SMS Sent</span>' : ''}
+          ${!r.smsSent && r.phone ? '<span class="badge badge-yellow">SMS Pending A2P</span>' : ''}
+        </div>
+      </div>
+      <div class="result-actions">
+        ${r.phone ? `<button class="btn-sm btn-sms" onclick="sendSMSToProspect('${r.phone}','${r.name.replace(/'/g,"\\'")}','${r.city}')">📱 Text</button>` : ''}
+        ${r.ghlContactId ? `<button class="btn-sm btn-ghl" onclick="window.open('https://app.gohighlevel.com/','_blank')">→ GHL</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('results').innerHTML = html;
+}
+
+checkStatus();
+setInterval(checkStatus, 30000);
+</script>
+</body>
+</html>
