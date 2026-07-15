@@ -69,6 +69,7 @@ const TARGET_CITIES = [
 async function createGHLContact(business, tag) {
   try {
     const payload = {
+      locationId: GHL_LOCATION_ID,
       firstName: business.name,
       companyName: business.name,
       phone: business.phone || '',
@@ -84,7 +85,7 @@ async function createGHLContact(business, tag) {
       }
     };
     const res = await axios.post(
-      'https://services.leadconnectorhq.com/contacts/',
+      'https://services.leadconnectorhq.com/contacts/?locationId=T2jYdY6yKrpGB5DjiWqp',
       payload,
       {
         headers: {
