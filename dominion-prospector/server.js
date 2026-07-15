@@ -101,23 +101,7 @@ async function createGHLContact(business, tag) {
   }
 }
 
-async function checkContactExists(phone) {
-  try {
-    const res = await axios.get(
-      `https://services.leadconnectorhq.com/contacts/search/duplicate?number=${encodeURIComponent(phone)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${GHL_API_KEY}`,
-          Version: '2021-07-28'
-        }
-      }
-    );
-    return res.data?.contact || null;
-  } catch {
-    return null;
-  }
-}
-
+async function checkContactExists(phone) { return null; }
 // ── GOOGLE PLACES SEARCH ──────────────────────────────────────────────────────
 
 async function searchBusinesses(industry, city) {
