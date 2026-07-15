@@ -85,13 +85,12 @@ async function createGHLContact(business, tag) {
       }
     };
     const res = await axios.post(
-      'https://services.leadconnectorhq.com/contacts/?locationId=T2jYdY6yKrpGB5DjiWqp',
+      'https://services.leadconnectorhq.com/contacts/',
       payload,
       {
         headers: {
           Authorization: `Bearer ${GHL_API_KEY}`,
           Version: '2021-07-28',
-          'Location-Id': GHL_LOCATION_ID,
           'Content-Type': 'application/json'
         }
       }
