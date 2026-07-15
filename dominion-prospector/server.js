@@ -90,6 +90,7 @@ async function createGHLContact(business, tag) {
         headers: {
           Authorization: `Bearer ${GHL_API_KEY}`,
           Version: '2021-07-28',
+          'Location-Id': GHL_LOCATION_ID,
           'Content-Type': 'application/json'
         }
       }
