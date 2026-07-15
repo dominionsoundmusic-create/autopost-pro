@@ -238,7 +238,7 @@ async function prospectCity(city, industry, mode = 'auto') {
 
     // Skip if they have a good website (has website and it's not a social media link)
     const hasSocialOnly = biz.website && (biz.website.includes('facebook.com') || biz.website.includes('yelp.com'));
-    const isGoodProspect = !biz.hasWebsite || hasSocialOnly;
+    const isGoodProspect = true;
 
     if (!isGoodProspect) {
       console.log(`  ⏭ Skip ${biz.name} — has website`);
