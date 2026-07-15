@@ -238,12 +238,8 @@ async function prospectCity(city, industry, mode = 'auto') {
 
     // Skip if they have a good website (has website and it's not a social media link)
     const hasSocialOnly = biz.website && (biz.website.includes('facebook.com') || biz.website.includes('yelp.com'));
-    const isGoodProspect = true;
+    const isGoodProspect = true; // show all results, labeled by website status
 
-    if (!isGoodProspect) {
-      console.log(`  ⏭ Skip ${biz.name} — has website`);
-      continue;
-    }
 
     // Check if already in GHL
     if (biz.phone) {
