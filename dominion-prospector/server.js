@@ -125,25 +125,13 @@ async function searchBusinesses(industry, city) {
     // Fallback: use Overpass/OSM for free searching
     return await searchOSM(industry, city);
   }
-  try {
-    const query = `${industry} in ${city}`;
-    const res = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
-      params: { query, key: GOOGLE_API_KEY }
-    });
-    return (res.data.results || []).map(p => ({
-      name: p.name,
-      address: p.formatted_address,
-      city: city,
-      phone: '',
-      rating: p.rating || '',
-      hasWebsite: false, // will check details
-      placeId: p.place_id,
-      industry: industry
-    }));
-  } catch (err) {
-    console.error('Google Places error:', err.message);
-    return [];
-  }
+try {
+        const res = await axios.post('https://places.googleapis.com/v1/places:searchText', {textQuery: industry + ' in ' + city, maxResultCount: 10}, {headers: {'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_API_KEY, 'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.rating,places.id'}});
+        return (res.data.places || []).map(p => ({name: p.displayName.text, address: p.formattedAddress, city: city, phone: p.nationalPhoneNumber || '', rating: p.rating || '', hasWebsite: !!p.websiteUri, website: p.websiteUri || '', industry: industry}));
+} catch (err) {
+        console.error('Google Places error:', err.response?.data || err.message);
+        return [];
+}
 }
 
 async function getPlaceDetails(placeId) {
