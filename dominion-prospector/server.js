@@ -172,7 +172,7 @@ async function searchOSM(industry, city) {
   try {
     const nominatim = await axios.get('https://nominatim.openstreetmap.org/search', {
       params: { q: city, format: 'json', limit: 1 },
-      headers: { 'User-Agent': 'DominionProspector/1.0' }
+      headers: { 'User-Agent': 'DominionProspector/1.0', 'Accept': 'application/json' }
     });
     if (!nominatim.data.length) return [];
     const { lat, lon } = nominatim.data[0];
@@ -180,7 +180,7 @@ async function searchOSM(industry, city) {
     const osmType = industry.replace(/ /g, '_');
     const query = `[out:json][timeout:25];(node["name"]["amenity"](around:${radius},${lat},${lon});node["name"]["shop"](around:${radius},${lat},${lon}););out body;`;
     const overpass = await axios.post('https://overpass-api.de/api/interpreter', query, {
-      headers: { 'Content-Type': 'text/plain' }
+       headers: { 'Content-Type': 'text/plain', 'Accept': 'application/json' }
     });
     return (overpass.data.elements || []).slice(0, 10).map(e => ({
       name: e.tags.name,
