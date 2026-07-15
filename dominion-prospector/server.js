@@ -77,12 +77,6 @@ async function createGHLContact(business, tag) {
       city: business.city || '',
       tags: [tag, 'prospected', business.hasWebsite ? 'weak-website' : 'no-website'],
       source: 'Dominion Prospector',
-      customField: {
-        industry: business.industry || '',
-        google_rating: business.rating || '',
-        website_status: business.hasWebsite ? 'Has Website' : 'No Website',
-        prospected_by: tag === 'prospected-auto' ? 'Sarah' : 'Maurice'
-      }
     };
     const res = await axios.post(
       'https://services.leadconnectorhq.com/contacts/',
