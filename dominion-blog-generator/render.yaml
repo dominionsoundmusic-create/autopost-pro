@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dominion-blog-generator
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        value: YOUR_ANTHROPIC_API_KEY
+      - key: GITHUB_TOKEN
+        value: YOUR_GITHUB_TOKEN
+      - key: PORT
+        value: 3001
