@@ -388,6 +388,12 @@ cron.schedule('0 7 * * *', () => {
   runAllBlogs();
 }, { timezone: 'America/Chicago' });
 
+// Keep alive ping to prevent Render free tier spin-down
+setInterval(async () => {
+    try {
+          await axios.get(`http://localhost:${process.env.PORT || 3001}/status`);
+    } catch(e) {}
+}, 840000);
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\n📝 Dominion Blog Generator running on port ${PORT}`);
