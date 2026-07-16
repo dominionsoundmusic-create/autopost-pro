@@ -179,6 +179,7 @@ Write the full blog post now:`;
     max_tokens: 2000,
     messages: [{ role: 'user', content: prompt }]
   }, {
+    timeout: 120000,
     headers: {
       'x-api-key': ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
