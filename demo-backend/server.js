@@ -65,6 +65,70 @@ const industryHeroes = {
   default: { emoji: '🏢', c1: '#0A0F1E', c2: '#1B3A6B', accent: '#E2C06A', tagline: 'Professional Services You Can Trust', query: 'professional business modern office premium' }
 };
 
+// ---------------------------------------------------------------------------
+// Local demo image library. Served from dominionwebdesignpro.com, so there is
+// no third-party API, no hourly rate limit, and no key that can expire.
+// Falls back to Unsplash for anything not covered.
+// ---------------------------------------------------------------------------
+const PHOTO_BASE = 'https://dominionwebdesignpro.com/demo-images';
+
+const PHOTO_COUNTS = {
+  'accounting': 4, 'auto-repair': 4, 'chiropractic': 8, 'cleaning': 4,
+  'construction': 4, 'default': 4, 'dental': 4, 'electrical': 4, 'gym': 4,
+  'hvac': 4, 'insurance': 4, 'landscaping': 4, 'legal': 4, 'pest-control': 4,
+  'photography': 4, 'plumbing': 4, 'real-estate': 4, 'restaurant': 4,
+  'roofing': 4, 'salon': 4, 'veterinary': 4
+};
+
+// maps the industryHeroes keys onto photo folders
+const PHOTO_FOLDER = {
+  plumber: 'plumbing', plumbing: 'plumbing',
+  dentist: 'dental', dental: 'dental',
+  roof: 'roofing',
+  hvac: 'hvac', heating: 'hvac', cooling: 'hvac',
+  lawyer: 'legal', attorney: 'legal', legal: 'legal',
+  chiro: 'chiropractic',
+  auto: 'auto-repair', car: 'auto-repair',
+  realtor: 'real-estate',
+  restaurant: 'restaurant', food: 'restaurant',
+  contractor: 'construction', construction: 'construction',
+  landscape: 'landscaping', lawn: 'landscaping',
+  electric: 'electrical',
+  insurance: 'insurance',
+  gym: 'gym', fitness: 'gym',
+  salon: 'salon', hair: 'salon',
+  vet: 'veterinary', animal: 'veterinary',
+  account: 'accounting', tax: 'accounting',
+  photo: 'photography',
+  clean: 'cleaning', maid: 'cleaning',
+  pest: 'pest-control',
+  default: 'default'
+};
+
+function getPhotoFolder(businessName, businessType) {
+  const text = (businessName + ' ' + businessType).toLowerCase();
+  for (const key of Object.keys(PHOTO_FOLDER)) {
+    if (key !== 'default' && text.includes(key)) return PHOTO_FOLDER[key];
+  }
+  return 'default';
+}
+
+// Picks distinct images so the hero, about and service shots are not identical.
+function pickLocalPhotos(folder, howMany) {
+  const count = PHOTO_COUNTS[folder] || 0;
+  if (!count) return [];
+  const nums = Array.from({ length: count }, (_, i) => i + 1);
+  for (let i = nums.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [nums[i], nums[j]] = [nums[j], nums[i]];
+  }
+  const out = [];
+  for (let i = 0; i < howMany; i++) {
+    out.push(`${PHOTO_BASE}/${folder}/${nums[i % nums.length]}.jpg`);
+  }
+  return out;
+}
+
 function getHero(businessName, businessType) {
   const text = (businessName + ' ' + businessType).toLowerCase();
   for (const [key, val] of Object.entries(industryHeroes)) {
@@ -139,6 +203,7 @@ app.post('/generate-demo', async (req, res) => {
 
   const refCode = genRefCode();
   const hero = getHero(businessName, businessType);
+  const local = pickLocalPhotos(getPhotoFolder(businessName, businessType), 3);
 
   try {
     const [copy, heroImg, aboutImg, serviceImg] = await Promise.all([
@@ -187,9 +252,9 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   "cta": "action-oriented 3-5 word CTA button text",
   "ctaSubtext": "urgency line under CTA like 'Free consultation — no commitment required'"
 }`),
-      fetchUnsplash(hero.query),
-      fetchUnsplash(businessType + ' professional team staff'),
-      fetchUnsplash(businessType + ' work service quality result')
+      local[0] ? Promise.resolve(local[0]) : fetchUnsplash(hero.query),
+      local[1] ? Promise.resolve(local[1]) : fetchUnsplash(businessType + ' professional team staff'),
+      local[2] ? Promise.resolve(local[2]) : fetchUnsplash(businessType + ' work service quality result')
     ]);
 
     let d;
