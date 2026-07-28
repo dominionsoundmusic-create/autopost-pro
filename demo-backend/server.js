@@ -305,7 +305,7 @@ function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceI
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{font-family:'Inter',Arial,sans-serif;background:var(--white);color:var(--text);-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',Arial,sans-serif;background:var(--white);color:var(--text);-webkit-font-smoothing:antialiased;margin:0;padding:0}
 
 /* PREVIEW BAR */
 .preview-bar{
