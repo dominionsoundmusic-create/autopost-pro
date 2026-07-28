@@ -418,7 +418,7 @@ nav{
 .svc-link{display:inline-flex;align-items:center;gap:4px;margin-top:14px;color:var(--c2);font-size:.8rem;font-weight:700;text-decoration:none}
 
 /* ABOUT */
-.about{background:linear-gradient(135deg,var(--c1),var(--c2));padding:88px 48px;overflow:hidden;position:relative}
+.about{background:#f8fafc;padding:88px 48px;overflow:hidden;position:relative}
 @media(max-width:768px){.about{padding:64px 24px}}
 .about::before{content:'';position:absolute;top:-100px;right:-100px;width:500px;height:500px;background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,transparent 70%);border-radius:50%}
 .about-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;position:relative;z-index:1}
@@ -426,13 +426,13 @@ nav{
 .about-img-wrap{position:relative}
 .about-img{border-radius:var(--radius-lg);overflow:hidden;height:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
 .about-img img{width:100%;height:100%;object-fit:cover}
-.about-img-no{background:rgba(255,255,255,0.07);border-radius:var(--radius-lg);height:420px;display:flex;align-items:center;justify-content:center;font-size:5rem;border:1px solid rgba(255,255,255,0.1)}
+.about-img-no{background:#e2e8f0;border-radius:var(--radius-lg);height:420px;display:flex;align-items:center;justify-content:center;font-size:5rem;border:1px solid #cbd5e1}
 .about-float{position:absolute;bottom:-16px;right:-16px;background:linear-gradient(135deg,var(--gold2),var(--gold));border-radius:var(--radius);padding:16px 20px;box-shadow:0 8px 32px rgba(201,168,76,0.4)}
 .about-float-num{font-size:1.8rem;font-weight:900;color:#0A0F1E;line-height:1}
 .about-float-txt{font-size:.7rem;font-weight:700;color:#0A0F1E;opacity:0.7}
 .about-content .section-label{color:var(--accent)}
-.about-content .section-title{color:var(--white)}
-.about-text{color:rgba(255,255,255,0.75);font-size:.92rem;line-height:1.85;margin-bottom:28px}
+.about-content .section-title{color:#0f172a}
+.about-text{color:#475569;font-size:.92rem;line-height:1.85;margin-bottom:28px}
 .why-list{display:flex;flex-direction:column;gap:14px}
 .why-item{display:flex;gap:14px;align-items:flex-start}
 .why-icon{width:36px;height:36px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
