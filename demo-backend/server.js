@@ -347,7 +347,7 @@ nav{
 /* HERO */
 .hero{
   position:relative;
-  min-height:620px;
+  height:100vh;max-height:700px;min-height:500px;
   display:flex;align-items:center;
   background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 60%,rgba(0,0,0,0.8) 100%);
   overflow:hidden;
