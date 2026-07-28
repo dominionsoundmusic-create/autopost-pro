@@ -287,7 +287,6 @@ Return ONLY a valid JSON object, no markdown, no explanation:
 
 function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceImg, refCode) {
   const loc = `${city}${state ? ', ' + state : ''}`;
-  const fullUrl = `https://dominionwebdesignpro.com/demo-generator.html?ref=${refCode}`;
   const phone = '(903) 636-7511';
 
   return `<!DOCTYPE html>
@@ -324,16 +323,6 @@ body{font-family:'Inter',Arial,sans-serif;background:var(--white);color:var(--te
 .preview-bar-left strong{color:var(--gold);font-weight:700}
 .preview-bar-right{display:flex;gap:8px;align-items:center}
 .ref-code{font-size:.65rem;color:rgba(255,255,255,.3);letter-spacing:1px}
-.view-full-btn{
-  background:linear-gradient(135deg,var(--gold2),var(--gold));
-  color:#0A0F1E;padding:8px 18px;border-radius:10px;
-  font-weight:800;font-size:.78rem;text-decoration:none;
-  display:flex;align-items:center;gap:6px;
-  box-shadow:0 2px 12px rgba(201,168,76,0.4);
-  transition:transform 0.2s,box-shadow 0.2s;
-  white-space:nowrap;
-}
-.view-full-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(201,168,76,0.5)}
 
 /* NAV */
 nav{
@@ -498,19 +487,6 @@ footer{
 </head>
 <body>
 
-<!-- PREVIEW BAR -->
-<div class="preview-bar">
-  <div class="preview-bar-left">
-    <span class="preview-badge">Free Preview</span>
-    <span>Your new website for <strong>${name}</strong> in ${loc}</span>
-  </div>
-  <div class="preview-bar-right">
-    <span class="ref-code">Ref: ${refCode}</span>
-    <a href="${fullUrl}" class="view-full-btn" target="_blank">
-      👁 View Full Website →
-    </a>
-  </div>
-</div>
 
 <!-- NAV -->
 <nav>
@@ -693,7 +669,6 @@ footer{
     <p>Contact ${name} today. We serve ${loc} and surrounding areas with fast, reliable ${type} services you can count on.</p>
     <div class="cta-btns">
       <a href="tel:+19036367511" class="btn-white">📞 Call ${phone}</a>
-      <a href="${fullUrl}" class="btn-gold" target="_blank">👁 View Full Website →</a>
     </div>
     <p class="cta-sub">${d.ctaSubtext}</p>
   </div>
