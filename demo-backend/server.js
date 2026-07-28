@@ -356,7 +356,7 @@ nav{
 .hero-bg{
   position:absolute;inset:0;
   ${heroImg ? `background-image:url('${heroImg}');background-size:cover;background-position:center;` : ''}
-  opacity:0.18;
+  opacity:0.85;
 }
 .hero-overlay{
   position:absolute;inset:0;
