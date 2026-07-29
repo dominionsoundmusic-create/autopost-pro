@@ -698,6 +698,43 @@ app.post('/claim-preview', async (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/chat', async (req, res) => {
+  try {
+    const { messages, system } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const body = JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: system || '',
+      messages: messages
+    });
+    const options = {
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(body)
+      }
+    };
+    const result = await new Promise((resolve, reject) => {
+      const req2 = https.request(options, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => resolve(JSON.parse(data)));
+      });
+      req2.on('error', reject);
+      req2.write(body);
+      req2.end();
+    });
+    res.json({ content: result.content[0].text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '3.0-premium' }));
 
 const PORT = process.env.PORT || 3001;
