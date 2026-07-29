@@ -704,7 +704,7 @@ app.post('/chat', async (req, res) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     const body = JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 2000,
       system: system || '',
       messages: messages
     });
@@ -730,6 +730,51 @@ app.post('/chat', async (req, res) => {
       req2.end();
     });
     res.json({ content: result.content[0].text });
+  } catch (err) {
+    console.error('Chat error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/search-businesses', async (req, res) => {
+  try {
+    const { query, location } = req.body;
+    const searchQuery = encodeURIComponent(`${query} in ${location}`);
+    const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+    const places = await new Promise((resolve, reject) => {
+      https.get(placesUrl, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => resolve(JSON.parse(data)));
+      }).on('error', reject);
+    });
+    const businesses = (places.results || []).slice(0, 10).map(p => ({
+      name: p.name,
+      address: p.formatted_address,
+      rating: p.rating,
+      reviews: p.user_ratings_total,
+      placeId: p.place_id,
+      hasWebsite: false,
+      phone: '',
+      website: ''
+    }));
+    // Get details for each to check website
+    for (let biz of businesses) {
+      try {
+        const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${biz.placeId}&fields=website,formatted_phone_number&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+        const detail = await new Promise((resolve, reject) => {
+          https.get(detailUrl, (r) => {
+            let data = '';
+            r.on('data', chunk => data += chunk);
+            r.on('end', () => resolve(JSON.parse(data)));
+          }).on('error', reject);
+        });
+        biz.website = detail.result?.website || '';
+        biz.phone = detail.result?.formatted_phone_number || '';
+        biz.hasWebsite = !!biz.website;
+      } catch(e) {}
+    }
+    res.json({ businesses });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
