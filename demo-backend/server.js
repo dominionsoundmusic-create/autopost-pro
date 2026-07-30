@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_KEY = process.enhv.ANTHROPIC_API_KEY;
 const UNSPLASH_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -349,7 +349,7 @@ nav{
   position:relative;
   height:100vh;max-height:700px;min-height:500px;
   display:flex;align-items:center;
-  background:linear-gradient(135deg,var(--c1) 0%,var(--c2) 60%,rgba(0,0,0,0.8) 100%);
+  background:#000;
   overflow:hidden;
   padding-top:0;
 }
