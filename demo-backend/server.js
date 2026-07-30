@@ -373,7 +373,7 @@ nav{
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--accent);font-size:.72rem;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase}
 .hero h1{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;color:var(--white);line-height:1.08;margin-bottom:18px;letter-spacing:-0.02em;text-shadow:0 2px 12px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.8)}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero-sub{color:rgba(255,255,255,0.72);font-size:1.05rem;line-height:1.75;margin-bottom:28px;max-width:520px;text-shadow:0 1px 8px rgba(0,0,0,0.9)}
+.hero-sub{font-size:clamp(.95rem,2vw,1.1rem);color:var(--white);line-height:1.7;margin-bottom:32px;max-width:520px;text-shadow:0 1px 8px rgba(0,0,0,0.9);background:rgba(0,0,0,0.35);padding:12px 16px;border-radius:8px;backdrop-filter:blur(2px)}
 .hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
 .hero-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:.75rem;font-weight:600;padding:6px 12px;border-radius:8px}
 .hero-badge::before{content:'✓';color:var(--accent);font-weight:900}
