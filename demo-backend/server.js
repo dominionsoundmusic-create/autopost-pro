@@ -360,7 +360,7 @@ nav{
 }
 .hero-overlay{
   position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(0,0,0,0.45) 0%,rgba(0,0,0,0.15) 50%,transparent 100%);
+  background:transparent;
 }
 .hero-grid{
   position:relative;z-index:2;
