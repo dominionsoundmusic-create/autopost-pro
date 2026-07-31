@@ -1,4 +1,5 @@
 const express = require('express');
+const { buildModernTemplate, buildBoldTemplate, buildElegantTemplate, buildRusticTemplate, buildMinimalTemplate } = require('./templates');
 const cors = require('cors');
 const https = require('https');
 const crypto = require('crypto');
@@ -52,8 +53,8 @@ const industryHeroes = {
   insurance: { emoji: '🛡️', c1: '#0A0A1A', c2: '#1A237E', accent: '#9FA8DA', tagline: 'Protect What Matters Most', query: 'insurance protection family security professional office' },
   gym: { emoji: '💪', c1: '#050505', c2: '#212121', accent: '#E2C06A', tagline: 'Transform Your Body. Transform Your Life.', query: 'gym fitness modern workout premium weights' },
   fitness: { emoji: '💪', c1: '#050505', c2: '#212121', accent: '#E2C06A', tagline: 'Transform Your Body. Transform Your Life.', query: 'gym fitness modern workout premium weights' },
-  salon: { emoji: '✂️', c1: '#1A0010', c2: '#880E4F', accent: '#F8BBD0', tagline: 'Look Great. Feel Amazing.', query: 'hair salon luxury beauty glamour modern interior' },
-  hair: { emoji: '✂️', c1: '#1A0010', c2: '#880E4F', accent: '#F8BBD0', tagline: 'Look Great. Feel Amazing.', query: 'hair salon luxury beauty glamour modern interior' },
+  salon: { emoji: '✂️', c1: '#1A0010', c2: '#6d1a3a', accent: '#e8a0b0', tagline: 'Look Great. Feel Amazing.', query: 'hair salon luxury beauty glamour modern interior' },
+  hair: { emoji: '✂️', c1: '#1A0010', c2: '#6d1a3a', accent: '#e8a0b0', tagline: 'Look Great. Feel Amazing.', query: 'hair salon luxury beauty glamour modern interior' },
   vet: { emoji: '🐾', c1: '#001A10', c2: '#1B5E20', accent: '#A5D6A7', tagline: 'Caring for Your Pets Like Family', query: 'veterinarian pet clinic professional dog cat care' },
   animal: { emoji: '🐾', c1: '#001A10', c2: '#1B5E20', accent: '#A5D6A7', tagline: 'Caring for Your Pets Like Family', query: 'veterinarian pet clinic professional dog cat care' },
   account: { emoji: '📊', c1: '#0A0A1A', c2: '#1A237E', accent: '#9FA8DA', tagline: 'Expert Financial & Tax Services', query: 'accounting finance professional office modern business' },
@@ -107,9 +108,10 @@ const PHOTO_FOLDER = {
 
 function getPhotoFolder(businessName, businessType) {
   const text = (businessName + ' ' + businessType).toLowerCase();
+  // Sort by key length descending so specific keys match before short ones (e.g. 'veterinarian' before 'vet', 'auto' won't steal matches)
   const keys = Object.keys(PHOTO_FOLDER).filter(k => k !== 'default').sort((a, b) => b.length - a.length);
-    for (const key of keys) {
-      if (key !== 'default' && text.includes(key)) return PHOTO_FOLDER[key];
+  for (const key of keys) {
+    if (text.includes(key)) return PHOTO_FOLDER[key];
   }
   return 'default';
 }
@@ -132,9 +134,10 @@ function pickLocalPhotos(folder, howMany) {
 
 function getHero(businessName, businessType) {
   const text = (businessName + ' ' + businessType).toLowerCase();
+  // Sort by key length descending so specific matches win
   const entries = Object.entries(industryHeroes).filter(([k]) => k !== 'default').sort((a, b) => b[0].length - a[0].length);
-    for (const [key, val] of entries) {
-      if (key !== 'default' && text.includes(key)) return val;
+  for (const [key, val] of entries) {
+    if (text.includes(key)) return val;
   }
   return industryHeroes.default;
 }
@@ -204,8 +207,11 @@ app.post('/generate-demo', async (req, res) => {
   if (!businessName || !businessType || !city) return res.status(400).json({ error: 'Missing required fields' });
 
   const refCode = genRefCode();
-  const hero = getHero(businessName, businessType);
-    if (primaryColor) { hero.c1 = primaryColor; hero.c2 = primaryColor; }
+  let hero = getHero(businessName, businessType);
+  // Allow color override from the builder
+  if (primaryColor) {
+    hero = { ...hero, c1: primaryColor, c2: primaryColor };
+  }
   const local = pickLocalPhotos(getPhotoFolder(businessName, businessType), 3);
 
   try {
@@ -783,7 +789,276 @@ app.post('/search-businesses', async (req, res) => {
   }
 });
 
+
+// ── BUILD FROM TEMPLATE ───────────────────────────────────────────────────
+app.post('/build-site', async (req, res) => {
+  const { businessName, businessType, city, state, phone, address, email,
+          rating, reviews, description, services, tagline, template,
+          primaryColor, photoB64, photoType } = req.body;
+
+  if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
+
+  // If no description/services provided, generate with AI
+  let desc = description;
+  let svcs = services || [];
+  let tag = tagline;
+
+  if (!desc || !svcs.length) {
+    try {
+      const aiPrompt = `Write website copy for: ${businessName}, a ${businessType || 'local business'} in ${city}, ${state || ''}.
+Return ONLY JSON (no markdown):
+{"description":"2-3 sentence business description","services":["service1","service2","service3","service4","service5","service6"],"tagline":"compelling short tagline"}`;
+      const aiRes = await callClaude(aiPrompt);
+      const cleaned = aiRes.replace(/\`\`\`json|\`\`\`/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      if (!desc) desc = parsed.description || '';
+      if (!svcs.length) svcs = parsed.services || [];
+      if (!tag) tag = parsed.tagline || '';
+    } catch(e) {}
+  }
+
+  const data = {
+    name: businessName,
+    type: businessType || 'Local Business',
+    city, state, phone, address, email,
+    rating: rating ? parseFloat(rating) : null,
+    reviews: reviews ? parseInt(reviews) : 0,
+    description: desc,
+    services: svcs,
+    tagline: tag,
+    primaryColor,
+    photoB64,
+    photoType: photoType || 'image/png'
+  };
+
+  let html = '';
+  const tpl = (template || 'modern').toLowerCase();
+  if (tpl === 'bold') html = buildBoldTemplate(data);
+  else if (tpl === 'elegant') html = buildElegantTemplate(data);
+  else if (tpl === 'rustic') html = buildRusticTemplate(data);
+  else if (tpl === 'minimal') html = buildMinimalTemplate(data);
+  else html = buildModernTemplate(data);
+
+  res.json({ html, template: tpl });
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '3.0-premium' }));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Demo backend v3 PREMIUM running on port ${PORT}`));
+
+// ── RESEARCH BUSINESS ─────────────────────────────────────────────────────
+// Auto-pulls info from Google Places, Yelp, and AI research
+app.post('/research-business', async (req, res) => {
+  const { businessName, city, state } = req.body;
+  if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
+
+  const result = {
+    name: businessName,
+    city,
+    state: state || '',
+    phone: '',
+    address: '',
+    website: '',
+    hours: [],
+    rating: null,
+    reviews: 0,
+    category: '',
+    description: '',
+    services: [],
+    facebookUrl: '',
+    instagramUrl: '',
+    yelpUrl: '',
+    googleUrl: '',
+    photos: [],
+    isBlackOwned: false,
+    isWomanOwned: false,
+    isLatinoOwned: false,
+  };
+
+  // 1. Google Places lookup
+  try {
+    const q = encodeURIComponent(`${businessName} ${city} ${state || ''}`);
+    const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${q}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+    const places = await new Promise((resolve, reject) => {
+      https.get(placesUrl, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({}); } });
+      }).on('error', () => resolve({}));
+    });
+
+    const place = (places.results || [])[0];
+    if (place) {
+      result.rating = place.rating || null;
+      result.reviews = place.user_ratings_total || 0;
+      result.address = place.formatted_address || '';
+      result.category = (place.types || [])[0]?.replace(/_/g, ' ') || '';
+
+      // Get full details
+      const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,website,opening_hours,editorial_summary,url&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+      const detail = await new Promise((resolve, reject) => {
+        https.get(detailUrl, (r) => {
+          let data = '';
+          r.on('data', chunk => data += chunk);
+          r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({}); } });
+        }).on('error', () => resolve({}));
+      });
+
+      const d = detail.result || {};
+      result.phone = d.formatted_phone_number || '';
+      result.website = d.website || '';
+      result.googleUrl = d.url || '';
+      result.description = d.editorial_summary?.overview || '';
+      if (d.opening_hours?.weekday_text) {
+        result.hours = d.opening_hours.weekday_text;
+      }
+    }
+  } catch(e) {}
+
+  // 2. AI research — find social URLs and services
+  try {
+    const aiPrompt = `Research this business: "${businessName}" in ${city}, ${state || ''}.
+
+Return ONLY a JSON object (no markdown, no explanation) with these fields:
+{
+  "facebookUrl": "https://facebook.com/... or empty string",
+  "instagramUrl": "https://instagram.com/... or empty string",
+  "yelpUrl": "https://yelp.com/biz/... or empty string",
+  "services": ["service1", "service2", "service3", "service4", "service5"],
+  "description": "2-3 sentence business description",
+  "tagline": "short compelling tagline for their website hero",
+  "isBlackOwned": false,
+  "isWomanOwned": false,
+  "isLatinoOwned": false
+}
+
+If you don't know specific URLs, leave them as empty strings. Base services on what this type of business typically offers.`;
+
+    const aiRes = await callClaude(aiPrompt);
+    const cleaned = aiRes.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    result.facebookUrl = parsed.facebookUrl || '';
+    result.instagramUrl = parsed.instagramUrl || '';
+    result.yelpUrl = parsed.yelpUrl || '';
+    result.services = parsed.services || [];
+    if (!result.description) result.description = parsed.description || '';
+    result.tagline = parsed.tagline || '';
+    result.isBlackOwned = parsed.isBlackOwned || false;
+    result.isWomanOwned = parsed.isWomanOwned || false;
+    result.isLatinoOwned = parsed.isLatinoOwned || false;
+  } catch(e) {}
+
+  res.json(result);
+});
+
+// ── PUSH TO GHL ───────────────────────────────────────────────────────────
+app.post('/push-to-ghl', async (req, res) => {
+  const { businessName, phone, email, address, city, state, demoUrl, tags } = req.body;
+  if (!businessName) return res.status(400).json({ error: 'businessName required' });
+
+  const GHL_KEY = process.env.GHL_API_KEY;
+  const GHL_LOC = process.env.GHL_LOCATION_ID;
+
+  if (!GHL_KEY || !GHL_LOC) return res.status(500).json({ error: 'GHL not configured' });
+
+  try {
+    // Create/update contact
+    const contactPayload = {
+      firstName: businessName.split(' ')[0],
+      lastName: businessName.split(' ').slice(1).join(' ') || 'Business',
+      name: businessName,
+      phone: phone || '',
+      email: email || '',
+      address1: address || '',
+      city: city || '',
+      state: state || '',
+      locationId: GHL_LOC,
+      customField: demoUrl ? [{ id: 'demo_site_url', field_value: demoUrl }] : [],
+      tags: tags || ['prospected-manual'],
+      source: 'Dominion Prospector'
+    };
+
+    const createRes = await new Promise((resolve, reject) => {
+      const body = JSON.stringify(contactPayload);
+      const options = {
+        hostname: 'rest.gohighlevel.com',
+        path: '/v1/contacts/',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GHL_KEY}`,
+          'Content-Length': Buffer.byteLength(body)
+        }
+      };
+      const request = https.request(options, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({ raw: data }); } });
+      });
+      request.on('error', reject);
+      request.write(body);
+      request.end();
+    });
+
+    res.json({ success: true, contact: createRes.contact || createRes, message: 'Contact added to GHL — Victoria will call shortly!' });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── WRITE OUTREACH MESSAGE ────────────────────────────────────────────────
+app.post('/write-outreach', async (req, res) => {
+  const { businessName, city, businessType, platform, demoUrl, rating, reviews } = req.body;
+  if (!businessName) return res.status(400).json({ error: 'businessName required' });
+
+  try {
+    const prompt = `Write a short, friendly, personalized outreach message for a ${platform || 'Facebook'} DM to ${businessName} in ${city}.
+
+Context:
+- They have no website
+- We built them a free demo site: ${demoUrl || 'https://dominionwebdesignpro.com'}
+- They are a ${businessType || 'local business'}
+${rating ? `- They have ${reviews} reviews and a ${rating} star rating` : ''}
+
+Requirements:
+- Max 3 sentences
+- Casual and friendly, not salesy
+- Mention the free demo site
+- End with a soft call to action
+- Don't use emojis excessively
+- Sound like a real person, not a robot
+
+Return ONLY the message text, nothing else.`;
+
+    const message = await callClaude(prompt);
+    res.json({ message: message.trim() });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── SCORE LEAD ────────────────────────────────────────────────────────────
+app.post('/score-lead', async (req, res) => {
+  const { businessName, hasWebsite, rating, reviews, hasFacebook, hasInstagram, category } = req.body;
+
+  let score = 0;
+  const reasons = [];
+
+  if (!hasWebsite) { score += 40; reasons.push('No website — prime target'); }
+  if (reviews > 50) { score += 20; reasons.push(`${reviews} reviews — established business`); }
+  else if (reviews > 20) { score += 10; reasons.push(`${reviews} reviews — active business`); }
+  if (rating >= 4.5) { score += 15; reasons.push(`${rating}★ rating — reputation to protect`); }
+  else if (rating >= 4.0) { score += 8; reasons.push(`${rating}★ rating — good reputation`); }
+  if (hasFacebook) { score += 10; reasons.push('Active on Facebook — reachable'); }
+  if (hasInstagram) { score += 5; reasons.push('Active on Instagram'); }
+
+  const hotCategories = ['veterinarian', 'dentist', 'salon', 'barbershop', 'restaurant', 'chiropractor', 'attorney'];
+  if (hotCategories.some(c => (category || '').toLowerCase().includes(c))) {
+    score += 10; reasons.push('High-value industry');
+  }
+
+  const tier = score >= 70 ? '🔥 Hot' : score >= 45 ? '⚡ Warm' : '❄️ Cold';
+
+  res.json({ score, tier, reasons });
+});
