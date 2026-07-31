@@ -107,8 +107,9 @@ const PHOTO_FOLDER = {
 
 function getPhotoFolder(businessName, businessType) {
   const text = (businessName + ' ' + businessType).toLowerCase();
-  for (const key of Object.keys(PHOTO_FOLDER)) {
-    if (key !== 'default' && text.includes(key)) return PHOTO_FOLDER[key];
+  const keys = Object.keys(PHOTO_FOLDER).filter(k => k !== 'default').sort((a, b) => b.length - a.length);
+    for (const key of keys) {
+      if (key !== 'default' && text.includes(key)) return PHOTO_FOLDER[key];
   }
   return 'default';
 }
@@ -131,8 +132,9 @@ function pickLocalPhotos(folder, howMany) {
 
 function getHero(businessName, businessType) {
   const text = (businessName + ' ' + businessType).toLowerCase();
-  for (const [key, val] of Object.entries(industryHeroes)) {
-    if (key !== 'default' && text.includes(key)) return val;
+  const entries = Object.entries(industryHeroes).filter(([k]) => k !== 'default').sort((a, b) => b[0].length - a[0].length);
+    for (const [key, val] of entries) {
+      if (key !== 'default' && text.includes(key)) return val;
   }
   return industryHeroes.default;
 }
@@ -198,11 +200,12 @@ app.post('/generate-demo', async (req, res) => {
   ipCounts[ip] = (ipCounts[ip] || 0) + 1;
   if (ipCounts[ip] > IP_LIMIT) return res.status(429).json({ error: 'Preview limit reached. Call (903) 636-7511 for your custom site.' });
 
-  const { businessName, businessType, city, state, customRequest } = req.body;
+  const { businessName, businessType, city, state, customRequest, primaryColor } = req.body;
   if (!businessName || !businessType || !city) return res.status(400).json({ error: 'Missing required fields' });
 
   const refCode = genRefCode();
   const hero = getHero(businessName, businessType);
+    if (primaryColor) { hero.c1 = primaryColor; hero.c2 = primaryColor; }
   const local = pickLocalPhotos(getPhotoFolder(businessName, businessType), 3);
 
   try {
