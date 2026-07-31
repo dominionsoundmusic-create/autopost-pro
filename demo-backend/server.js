@@ -359,11 +359,11 @@ nav{
 .hero-bg{
   position:absolute;inset:0;
   ${heroImg ? `background-image:url('${heroImg}');background-size:cover;background-position:center;` : ''}
-  opacity:0.85;
+  opacity:1;
 }
 .hero-overlay{
   position:absolute;inset:0;
-  background:transparent;
+  background:${heroImg ? 'linear-gradient(100deg,rgba(0,0,0,0.80) 0%,rgba(0,0,0,0.50) 35%,rgba(0,0,0,0.08) 65%,rgba(0,0,0,0.0) 100%)' : 'transparent'};
 }
 .hero-grid{
   position:relative;z-index:2;
