@@ -143,7 +143,7 @@ nav{
 
 /* ── HERO ── */
 .hero{
-  min-height:100vh;position:relative;
+  min-height:620px;max-height:680px;position:relative;
   display:flex;align-items:center;
   overflow:hidden;background:var(--primary);
 }
@@ -167,7 +167,7 @@ nav{
 }
 .hero-content{
   position:relative;z-index:2;
-  max-width:640px;padding:160px 72px 120px;
+  max-width:640px;padding:110px 72px 80px;
 }
 .hero-eyebrow{
   display:inline-flex;align-items:center;gap:10px;
