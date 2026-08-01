@@ -167,7 +167,7 @@ nav{
 }
 .hero-content{
   position:relative;z-index:2;
-  max-width:640px;padding:110px 72px 80px;
+  max-width:640px;padding:max(110px,calc(70px + 40px)) 72px 60px;
 }
 .hero-eyebrow{
   display:inline-flex;align-items:center;gap:10px;
@@ -178,7 +178,7 @@ nav{
 .hero-eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--gold);opacity:.6}
 .hero h1{
   font-family:var(--ff-display);
-  font-size:clamp(1.9em,3.5vw,3.2em);
+  font-size:clamp(1.5em,2.8vw,2.4em);
   color:#fff;font-weight:700;
   line-height:1.06;letter-spacing:-1.5px;
   margin-bottom:16px;
