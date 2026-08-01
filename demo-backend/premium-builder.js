@@ -178,7 +178,7 @@ nav{
 .hero-eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--gold);opacity:.6}
 .hero h1{
   font-family:var(--ff-display);
-  font-size:clamp(2.8em,5.5vw,4.8em);
+  font-size:clamp(1.9em,3.5vw,3.2em);
   color:#fff;font-weight:700;
   line-height:1.06;letter-spacing:-1.5px;
   margin-bottom:16px;
@@ -188,9 +188,15 @@ nav{
   font-weight:400;display:block;
 }
 .hero-desc{
-  font-size:1.05em;color:rgba(255,255,255,0.72);
-  line-height:1.8;margin-bottom:40px;
-  max-width:500px;font-weight:300;
+  font-size:.92em;color:#fff;
+  line-height:1.75;margin-bottom:32px;
+  max-width:480px;font-weight:400;
+  background:rgba(0,0,0,0.72);
+  backdrop-filter:blur(8px);
+  padding:14px 18px;
+  border-radius:6px;
+  border-left:3px solid var(--gold);
+  display:inline-block;
 }
 .hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:52px}
 .btn-primary{
