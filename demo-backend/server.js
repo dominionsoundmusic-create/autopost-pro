@@ -1,6 +1,6 @@
 const express = require('express');
 const { buildPremiumSite } = require('./premium-builder');
-const { buildModernTemplate, buildBoldTemplate, buildElegantTemplate, buildRusticTemplate, buildMinimalTemplate } = require('./templates');
+const { buildModernTemplate, buildBoldTemplate, buildElegantTemplate, buildRusticTemplate, buildMinimalTemplate, buildDominionDarkTemplate, buildPowerLocalTemplate, buildMagazineTemplate } = require('./templates');
 const cors = require('cors');
 const https = require('https');
 const crypto = require('crypto');
