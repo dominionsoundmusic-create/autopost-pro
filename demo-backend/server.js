@@ -960,7 +960,7 @@ app.post('/deploy-to-netlify', async (req, res) => {
       req.end();
     });
 
-    const liveUrl = `https://${siteRes.subdomain}.netlify.app`;
+    const liveUrl = siteRes.ssl_url || siteRes.url || `https://${siteRes.name || siteRes.subdomain || siteRes.id}.netlify.app`;
     res.json({ success: true, url: liveUrl, siteId: siteRes.id, deployId: deployRes.id });
 
   } catch(e) {
