@@ -932,13 +932,13 @@ app.post('/deploy-to-netlify', async (req, res) => {
 
     if (!siteRes.id) return res.status(500).json({ error: 'Could not create site: ' + JSON.stringify(siteRes) });
 
-    // Create zip with index.html
-    const AdmZip = require('adm-zip');
-    const zip = new AdmZip();
-    zip.addFile('index.html', Buffer.from(html, 'utf8'));
-    const zipBuffer = zip.toBuffer();
+    // Use Netlify file digest deploy (more reliable than zip)
+    const crypto = require('crypto');
+    const htmlBuffer = Buffer.from(html, 'utf8');
+    const sha1 = crypto.createHash('sha1').update(htmlBuffer).digest('hex');
 
-    // Deploy zip
+    // Step 1: Create deploy with file manifest
+    const manifestBody = JSON.stringify({ files: { '/index.html': sha1 } });
     const deployRes = await new Promise((resolve, reject) => {
       const options = {
         hostname: 'api.netlify.com',
@@ -946,8 +946,8 @@ app.post('/deploy-to-netlify', async (req, res) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NETLIFY_TOKEN}`,
-          'Content-Type': 'application/zip',
-          'Content-Length': zipBuffer.length
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(manifestBody)
         }
       };
       const req = https.request(options, (r) => {
@@ -956,7 +956,31 @@ app.post('/deploy-to-netlify', async (req, res) => {
         r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({ error: data }); } });
       });
       req.on('error', reject);
-      req.write(zipBuffer);
+      req.write(manifestBody);
+      req.end();
+    });
+
+    if (!deployRes.id) throw new Error('Deploy creation failed: ' + JSON.stringify(deployRes));
+
+    // Step 2: Upload the actual file
+    await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.netlify.com',
+        path: `/api/v1/deploys/${deployRes.id}/files/index.html`,
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Length': htmlBuffer.length
+        }
+      };
+      const req = https.request(options, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => resolve(data));
+      });
+      req.on('error', reject);
+      req.write(htmlBuffer);
       req.end();
     });
 
