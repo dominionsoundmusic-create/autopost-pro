@@ -896,6 +896,78 @@ Return ONLY valid JSON: {"description":"2-3 sentences","tagline":"Short tagline.
   res.json({ html });
 });
 
+
+// ── NETLIFY DEPLOY ────────────────────────────────────────────────────────
+app.post('/deploy-to-netlify', async (req, res) => {
+  const { html, slug } = req.body;
+  if (!html) return res.status(400).json({ error: 'No HTML provided' });
+
+  const NETLIFY_TOKEN = process.env.NETLIFY_TOKEN || 'nfp_ryWT4QhrzF8N2NMXeGc1igENZmTkfY4W8237';
+
+  try {
+    // Create a new site
+    const siteName = (slug || 'dominion-demo') + '-' + Date.now().toString(36);
+    
+    const siteRes = await new Promise((resolve, reject) => {
+      const body = JSON.stringify({ name: siteName });
+      const options = {
+        hostname: 'api.netlify.com',
+        path: '/api/v1/sites',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        }
+      };
+      const req = https.request(options, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({ error: data }); } });
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+
+    if (!siteRes.id) return res.status(500).json({ error: 'Could not create site: ' + JSON.stringify(siteRes) });
+
+    // Create zip with index.html
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip();
+    zip.addFile('index.html', Buffer.from(html, 'utf8'));
+    const zipBuffer = zip.toBuffer();
+
+    // Deploy zip
+    const deployRes = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.netlify.com',
+        path: `/api/v1/sites/${siteRes.id}/deploys`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NETLIFY_TOKEN}`,
+          'Content-Type': 'application/zip',
+          'Content-Length': zipBuffer.length
+        }
+      };
+      const req = https.request(options, (r) => {
+        let data = '';
+        r.on('data', chunk => data += chunk);
+        r.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({ error: data }); } });
+      });
+      req.on('error', reject);
+      req.write(zipBuffer);
+      req.end();
+    });
+
+    const liveUrl = `https://${siteRes.subdomain}.netlify.app`;
+    res.json({ success: true, url: liveUrl, siteId: siteRes.id, deployId: deployRes.id });
+
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '3.0-premium' }));
 
 const PORT = process.env.PORT || 3001;
