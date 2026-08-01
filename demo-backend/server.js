@@ -1,4 +1,5 @@
 const express = require('express');
+const { buildPremiumSite } = require('./premium-builder');
 const { buildModernTemplate, buildBoldTemplate, buildElegantTemplate, buildRusticTemplate, buildMinimalTemplate } = require('./templates');
 const cors = require('cors');
 const https = require('https');
@@ -840,6 +841,59 @@ Return ONLY JSON (no markdown):
   else html = buildModernTemplate(data);
 
   res.json({ html, template: tpl });
+});
+
+
+// ── PREMIUM BUILD ─────────────────────────────────────────────────────────
+app.post('/build-premium', async (req, res) => {
+  const {
+    businessName, businessType, city, state, phone, address,
+    rating, reviews, description, services, tagline, hours,
+    facebookUrl, instagramUrl, yelpUrl, googleUrl, linkedinUrl, websiteUrl,
+    primaryColor,
+    photoB64, photoType, photo2B64, photo2Type,
+    photo3B64, photo3Type, photo4B64, photo4Type,
+    reviewTexts, isBlackOwned, isWomanOwned, isLatinoOwned
+  } = req.body;
+
+  if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
+
+  let desc = description, svcs = services || [], tag = tagline, revs = reviewTexts || [], hrs = hours || [];
+
+  if (!desc || !svcs.length) {
+    try {
+      const aiPrompt = `Write premium website content for: ${businessName}, a ${businessType || 'local business'} in ${city}.
+Return ONLY valid JSON: {"description":"2-3 sentences","tagline":"Short tagline. Second line.","services":["s1","s2","s3","s4","s5","s6"],"reviewTexts":["review1 ~20 words","review2","review3"],"hours":["Monday – Friday: 8:00 AM – 6:00 PM","Saturday: 9:00 AM – 4:00 PM","Sunday: Closed"]}`;
+      const aiRes = await callClaude(aiPrompt);
+      const parsed = JSON.parse(aiRes.replace(/\`\`\`json|\`\`\`/g,'').trim());
+      if (!desc) desc = parsed.description || '';
+      if (!svcs.length) svcs = parsed.services || [];
+      if (!tag) tag = parsed.tagline || '';
+      if (!revs.length) revs = parsed.reviewTexts || [];
+      if (!hrs.length) hrs = parsed.hours || [];
+    } catch(e) {}
+  }
+
+  const data = {
+    name: businessName, type: businessType || 'Local Business',
+    city, state, phone, address,
+    rating: rating ? parseFloat(rating) : null,
+    reviews: reviews ? parseInt(reviews) : 0,
+    description: desc, services: svcs, tagline: tag, hours: hrs,
+    facebookUrl, instagramUrl, yelpUrl, googleUrl, linkedinUrl, websiteUrl,
+    primaryColor,
+    photoB64, photoType: photoType || 'image/png',
+    photo2B64, photo2Type: photo2Type || 'image/png',
+    photo3B64, photo3Type: photo3Type || 'image/png',
+    photo4B64, photo4Type: photo4Type || 'image/png',
+    reviewTexts: revs,
+    isBlackOwned: isBlackOwned || false,
+    isWomanOwned: isWomanOwned || false,
+    isLatinoOwned: isLatinoOwned || false
+  };
+
+  const html = buildPremiumSite(data);
+  res.json({ html });
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '3.0-premium' }));
