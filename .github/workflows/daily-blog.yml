@@ -1,0 +1,35 @@
+name: Daily Blog Generation
+
+# 12:00 UTC = 7:00 AM Chicago during CDT (summer).
+# GitHub Actions cron does not observe DST, so this lands at 6:00 AM CST in winter.
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:        # lets you run it manually from the Actions tab
+
+jobs:
+  trigger-blogs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the service (free tier can take ~60s to spin up)
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 \
+              https://dominion-blog-generator.onrender.com/status || echo 000)
+            echo "wake attempt $i -> HTTP $code"
+            if [ "$code" = "200" ]; then echo "service awake"; break; fi
+            sleep 15
+          done
+
+      - name: Trigger blog generation for all brands
+        run: |
+          curl -s -X POST --max-time 120 \
+            https://dominion-blog-generator.onrender.com/run-all \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP %{http_code}\n"
+
+      - name: Confirm brand count
+        run: |
+          curl -s --max-time 60 \
+            https://dominion-blog-generator.onrender.com/brands \
+            | head -c 800; echo
