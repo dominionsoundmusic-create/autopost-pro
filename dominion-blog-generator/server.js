@@ -478,7 +478,7 @@ Write the full blog post now:`;
 // Create full HTML page for the blog post
 function wrapBlogPost(brand, topic, content, slug) {
   const year = new Date().getFullYear();
-  const title = topic.replace('{year}', year).replace('{industry}', 'Local');
+  const title = topic.replace('{year}', year).replace('{industry}', 'Local').replace('{city}', brand.city || 'Your Area');
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return `<!DOCTYPE html>
@@ -573,7 +573,7 @@ async function publishBlogPost(brand) {
 
   // Pick a random topic
   const topic = brand.topics[Math.floor(Math.random() * brand.topics.length)];
-  console.log(`Topic: ${topic}`);
+  console.log(`Topic: ${topic.replace('{city}', brand.city || 'Your Area')}`);
 
   // Generate content
   const content = await generateBlogPost(brand, topic);
