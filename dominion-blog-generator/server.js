@@ -147,13 +147,298 @@ const BRANDS = [
     style: 'authoritative, forward-thinking, business-focused',
     cta: 'Get your free AI strategy session at dominionaiagency.com',
     color: '#e53e3e'
+  },
+  {
+    name: 'Houston Power Washing Pro',
+    slug: 'houston-wash',
+    city: 'Houston',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'houston-powerwashing-pro',
+    blog_path: 'blog',
+    domain: 'houston-powerwashing-pro.netlify.app',
+    topics: [
+      'how often should you pressure wash your house',
+      'signs your driveway needs professional cleaning',
+      'pressure washing vs soft washing what is the difference',
+      'how power washing protects your home value',
+      'best time of year to pressure wash in {city}',
+      'why DIY pressure washing damages siding',
+      'how much does pressure washing cost in {city}',
+      'removing oil stains from concrete driveways',
+      'roof soft washing and why bleach damages shingles',
+      'how clean exterior surfaces prevent costly repairs'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free power washing quote — call eight three two, six six two, four one zero seven',
+    color: '#00c6ff'
+  },
+  {
+    name: 'Houston HVAC Pro',
+    slug: 'houston-hvac',
+    city: 'Houston',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'houston-hvac-pro',
+    blog_path: 'blog',
+    domain: 'stirring-gumdrop-4e30a6.netlify.app',
+    topics: [
+      'why your AC is running but not cooling',
+      'how often should you replace your air filter',
+      'signs your air conditioner needs repair not replacement',
+      'how much does AC replacement cost in {city}',
+      'what SEER rating means and which one you need',
+      'why AC units fail in {city} summer heat',
+      'emergency AC repair what to do while you wait',
+      'how annual HVAC maintenance cuts your power bill',
+      'heat pump vs traditional AC which is better',
+      'how to size an air conditioner for your home'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free AC repair quote today',
+    color: '#e63946'
+  },
+  {
+    name: 'Houston Roofing Pro',
+    slug: 'houston-roofing',
+    city: 'Houston',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'houston-roofing-pro',
+    blog_path: 'blog',
+    domain: 'delicate-bavarois-59069c.netlify.app',
+    topics: [
+      'how to spot hail damage on your roof',
+      'signs you need a new roof not a repair',
+      'how much does roof replacement cost in {city}',
+      'does insurance cover storm damage to your roof',
+      'metal roofing vs asphalt shingles which lasts longer',
+      'how long does a roof last in {city} weather',
+      'what to do after a storm damages your roof',
+      'how to choose a roofing contractor you can trust',
+      'why roof leaks get expensive when ignored',
+      'free roof inspections what they should include'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free roof inspection today',
+    color: '#2b6cb0'
+  },
+  {
+    name: 'Dallas Power Washing Pro',
+    slug: 'dallas-wash',
+    city: 'Dallas',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dallas-powerwashing-pro',
+    blog_path: 'blog',
+    domain: 'dallaspowerwashingpro.com',
+    topics: [
+      'how often should you pressure wash your house',
+      'signs your driveway needs professional cleaning',
+      'pressure washing vs soft washing what is the difference',
+      'how power washing protects your home value',
+      'best time of year to pressure wash in {city}',
+      'why DIY pressure washing damages siding',
+      'how much does pressure washing cost in {city}',
+      'removing oil stains from concrete driveways',
+      'roof soft washing and why bleach damages shingles',
+      'how clean exterior surfaces prevent costly repairs'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free power washing quote today',
+    color: '#00c6ff'
+  },
+  {
+    name: 'Dallas HVAC Pro',
+    slug: 'dallas-hvac',
+    city: 'Dallas',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dallas-hvac-pro',
+    blog_path: 'blog',
+    domain: 'dallasairandheating.com',
+    topics: [
+      'why your AC is running but not cooling',
+      'how often should you replace your air filter',
+      'signs your air conditioner needs repair not replacement',
+      'how much does AC replacement cost in {city}',
+      'what SEER rating means and which one you need',
+      'why AC units fail in {city} summer heat',
+      'emergency AC repair what to do while you wait',
+      'how annual HVAC maintenance cuts your power bill',
+      'heat pump vs traditional AC which is better',
+      'how to size an air conditioner for your home'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free AC repair quote today',
+    color: '#e63946'
+  },
+  {
+    name: 'Dallas Roofing Pro',
+    slug: 'dallas-roofing',
+    city: 'Dallas',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dallas-roofing-pro',
+    blog_path: 'blog',
+    domain: 'dfwexpertroofers.com',
+    topics: [
+      'how to spot hail damage on your roof',
+      'signs you need a new roof not a repair',
+      'how much does roof replacement cost in {city}',
+      'does insurance cover storm damage to your roof',
+      'metal roofing vs asphalt shingles which lasts longer',
+      'how long does a roof last in {city} weather',
+      'what to do after a storm damages your roof',
+      'how to choose a roofing contractor you can trust',
+      'why roof leaks get expensive when ignored',
+      'free roof inspections what they should include'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free roof inspection today',
+    color: '#2b6cb0'
+  },
+  {
+    name: 'Phoenix Pool Cleaning Pro',
+    slug: 'phoenix-pool',
+    city: 'Phoenix',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'phoenix-pool-cleaning-pro',
+    blog_path: 'blog',
+    domain: 'superlative-mandazi-aa17b9.netlify.app',
+    topics: [
+      'how often should a pool be cleaned in {city}',
+      'why your pool turns green and how to fix it',
+      'pool chemical balancing explained simply',
+      'how desert heat and dust affect pool chemistry',
+      'signs your pool pump is about to fail',
+      'how much does weekly pool service cost in {city}',
+      'saltwater vs chlorine pools which is easier to maintain',
+      'how to keep algae out of a pool in summer',
+      'pool equipment repairs you should never DIY',
+      'what weekly pool service actually includes'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free pool cleaning quote — service from $99 a month',
+    color: '#0ea5e9'
+  },
+  {
+    name: 'Tucson Pool Cleaning Pro',
+    slug: 'tucson-pool',
+    city: 'Tucson',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'tucson-pool-cleaning-pro',
+    blog_path: 'blog',
+    domain: 'superb-cendol-81e0e8.netlify.app',
+    topics: [
+      'how often should a pool be cleaned in {city}',
+      'why your pool turns green and how to fix it',
+      'pool chemical balancing explained simply',
+      'how desert heat and dust affect pool chemistry',
+      'signs your pool pump is about to fail',
+      'how much does weekly pool service cost in {city}',
+      'saltwater vs chlorine pools which is easier to maintain',
+      'how to keep algae out of a pool in summer',
+      'pool equipment repairs you should never DIY',
+      'what weekly pool service actually includes'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free pool cleaning quote — service from $99 a month',
+    color: '#e07040'
+  },
+  {
+    name: 'Yuma Pool Cleaning Pro',
+    slug: 'yuma-pool',
+    city: 'Yuma',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'arizona-pool-cleaning-pro',
+    blog_path: 'blog',
+    domain: 'majestic-youtiao-97786f.netlify.app',
+    topics: [
+      'how often should a pool be cleaned in {city}',
+      'why your pool turns green and how to fix it',
+      'pool chemical balancing explained simply',
+      'how desert heat and dust affect pool chemistry',
+      'signs your pool pump is about to fail',
+      'how much does weekly pool service cost in {city}',
+      'saltwater vs chlorine pools which is easier to maintain',
+      'how to keep algae out of a pool in summer',
+      'pool equipment repairs you should never DIY',
+      'what weekly pool service actually includes'
+    ],
+    style: 'practical, homeowner-focused, local',
+    cta: 'Get a free pool cleaning quote — service from $99 a month',
+    color: '#0d9488'
+  },
+  {
+    name: 'Dominion Hard Money',
+    slug: 'hard-money',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dominion-hard-money',
+    blog_path: 'blog',
+    domain: 'dominionhardmoney.com',
+    topics: [
+      'what is a hard money loan and who uses one',
+      'hard money vs conventional financing for investors',
+      'how fast can you close on a fix and flip loan',
+      'what lenders look for in a fix and flip deal',
+      'DSCR rental loans explained for first time investors',
+      'how to calculate ARV and maximum allowable offer',
+      'bridge loans when you need to move fast',
+      'common reasons hard money deals fall through',
+      'how much down payment do hard money lenders require',
+      'building a relationship with a private lender'
+    ],
+    style: 'authoritative, investor-focused, plain-spoken',
+    cta: 'Get your deal reviewed at dominionhardmoney.com',
+    color: '#c9a84c'
+  },
+  {
+    name: 'Dominion Review Pro',
+    slug: 'review-pro',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dominionreviewpro-site',
+    blog_path: 'blog',
+    domain: 'dominionreviewpro.com',
+    topics: [
+      'how online reviews affect local search rankings',
+      'how to ask customers for reviews without being pushy',
+      'what to do about a bad review',
+      'why review count matters more than perfect ratings',
+      'how many reviews does a local business actually need',
+      'responding to reviews and why it matters to Google',
+      'automating review requests after every job',
+      'review sites that matter most for local business',
+      'how reviews influence buying decisions',
+      'turning happy customers into repeat referrals'
+    ],
+    style: 'helpful, reputation-focused, practical',
+    cta: 'Start collecting more reviews at dominionreviewpro.com',
+    color: '#38a169'
+  },
+  {
+    name: 'Dominion Local Business Directory',
+    slug: 'directory',
+    repo_owner: 'dominionsoundmusic-create',
+    repo_name: 'dominionlocalbusinessdirectory-site',
+    blog_path: 'blog',
+    domain: 'dominionlocalbusinessdirectory.com',
+    topics: [
+      'why local business listings still matter for SEO',
+      'how to claim and optimize your business listing',
+      'NAP consistency and why it affects your rankings',
+      'how customers actually find local businesses online',
+      'directory listings vs Google Business Profile',
+      'how to write a business description that converts',
+      'local citations explained for small business owners',
+      'why inconsistent business info costs you customers',
+      'how to show up in near me searches',
+      'building local authority one listing at a time'
+    ],
+    style: 'informative, SEO-focused, accessible',
+    cta: 'List your business free at dominionlocalbusinessdirectory.com',
+    color: '#805ad5'
   }
 ];
 
 // Generate a blog post using Claude API
 async function generateBlogPost(brand, topic) {
   const year = new Date().getFullYear();
-  const resolvedTopic = topic.replace('{year}', year).replace('{industry}', 'local');
+  const resolvedTopic = topic.replace('{year}', year).replace('{industry}', 'local').replace('{city}', brand.city || 'your area');
 
   const prompt = `Write a complete SEO-optimized blog post for ${brand.name} about: "${resolvedTopic}"
 
@@ -293,7 +578,7 @@ async function publishBlogPost(brand) {
   // Generate content
   const content = await generateBlogPost(brand, topic);
   const year = new Date().getFullYear();
-  const resolvedTopic = topic.replace('{year}', year).replace('{industry}', 'Local');
+  const resolvedTopic = topic.replace('{year}', year).replace('{industry}', 'Local').replace('{city}', brand.city || 'Your Area');
   const slug = slugify(resolvedTopic) + '-' + Date.now();
 
   // Wrap in full HTML page
