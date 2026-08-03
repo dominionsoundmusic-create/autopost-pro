@@ -366,7 +366,7 @@ nav{
 /* HERO */
 .hero{
   position:relative;
-  height:100vh;max-height:700px;min-height:500px;
+  height:calc(100vh - 84px);max-height:700px;min-height:520px;
   display:flex;align-items:center;
   background:#000;
   overflow:hidden;

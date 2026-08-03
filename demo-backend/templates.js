@@ -387,7 +387,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--dark)}
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(45,26,0,0.95);backdrop-filter:blur(8px);padding:0 48px;height:66px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--warm)}
 .nav-logo{font-family:'Merriweather',serif;font-size:1em;font-weight:700;color:#fff;text-decoration:none}
 .nav-cta{background:var(--warm);color:#fff;padding:9px 22px;text-decoration:none;font-weight:700;font-size:.82em;border-radius:2px}
-.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;background:var(--dark)}
+.hero{height:calc(100vh - 84px);max-height:700px;min-height:520px;display:flex;align-items:center;position:relative;overflow:hidden;background:var(--dark)}
 .hero-bg{position:absolute;inset:0;${photoB64 ? `background:linear-gradient(100deg,rgba(45,26,0,0.90) 0%,rgba(45,26,0,0.55) 40%,rgba(45,26,0,0.08) 100%),${heroPhoto} center/cover no-repeat;` : `background:linear-gradient(135deg,${color} 0%,#1a0a00 100%);`}}
 .hero-content{position:relative;z-index:2;max-width:600px;padding:150px 56px 110px}
 .hero-badge{display:inline-block;border:1px solid var(--warm);color:var(--warm);font-size:.72em;letter-spacing:3px;text-transform:uppercase;padding:5px 14px;margin-bottom:22px;border-radius:2px}
