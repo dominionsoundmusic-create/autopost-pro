@@ -6,7 +6,7 @@ function buildPremiumSite(data) {
     name, type, city, state, phone, address,
     rating, reviews, description, services, tagline, hours,
     facebookUrl, instagramUrl, yelpUrl, googleUrl, websiteUrl,
-    primaryColor, photoB64, photoType,
+    primaryColor, photoB64, photoType, logoB64, logoType,
     photo2B64, photo2Type, photo3B64, photo3Type, photo4B64, photo4Type,
     reviewTexts, teamNames, isBlackOwned, isWomanOwned, isLatinoOwned
   } = data;
@@ -40,12 +40,21 @@ function buildPremiumSite(data) {
   ].filter(Boolean).join('');
 
   // Reviews section
-  const reviewsHtml = revs.length ? revs.slice(0,3).map(r => `
+  const logoUrl = logoB64 ? `data:${logoType||'image/png'};base64,${logoB64}` : null;
+
+  const reviewsHtml = revs.length ? revs.slice(0,3).map(r => {
+    // r may be a plain string (older callers) or a real Google review object
+    const text   = typeof r === 'string' ? r : (r.text || '');
+    const author = typeof r === 'string' ? '' : (r.author || '');
+    const when   = typeof r === 'string' ? '' : (r.when || '');
+    const stars  = '★'.repeat(Math.round((typeof r === 'string' ? 5 : (r.rating || 5))));
+    return `
     <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-text">"${r}"</p>
+      <div class="review-stars">${stars}</div>
+      <p class="review-text">"${text}"</p>
+      ${author ? `<div class="review-author">— ${author}${when ? ` · ${when}` : ''}</div>` : ''}
     </div>
-  `).join('') : `
+  `;}).join('') : `
     <div class="review-card">
       <div class="review-stars">★★★★★</div>
       <p class="review-text">"Absolutely the best ${type} in ${city}. Professional, knowledgeable, and genuinely caring. I wouldn't go anywhere else."</p>
@@ -361,6 +370,8 @@ section{padding:96px 72px}
 .reviews .eyebrow{color:var(--gold)}
 .reviews .section-title{color:#fff}
 .reviews .section-title em{color:var(--gold)}
+.review-author{margin-top:14px;font-size:.85rem;color:var(--gold);font-weight:600;letter-spacing:.02em}
+.nav-logo-img{height:38px;width:38px;border-radius:9px;object-fit:cover;flex:0 0 auto}
 .reviews-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
   gap:20px;margin-top:0;
@@ -561,7 +572,7 @@ ${phoneClean ? `<a href="tel:${phoneClean}" class="float-call" title="Call Now">
 <!-- NAV -->
 <nav>
   <a href="/" class="nav-brand">
-    <div class="nav-brand-icon">🏆</div>
+    ${logoUrl ? `<img src="${logoUrl}" alt="${name} logo" class="nav-logo-img">` : '<div class="nav-brand-icon">🏆</div>'}
     <div class="nav-brand-name">
       ${name}
       <span>${type} · ${city}</span>

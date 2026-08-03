@@ -999,6 +999,72 @@ app.listen(PORT, () => console.log(`Demo backend v3 PREMIUM running on port ${PO
 
 // ── RESEARCH BUSINESS ─────────────────────────────────────────────────────
 // Auto-pulls info from Google Places, Yelp, and AI research
+// ── REAL BUSINESS ASSETS ──────────────────────────────────────────────────
+// Pulls the business's own Google photos and logo so a demo looks like THEIR
+// site, not a template. Photos are fetched server-side and returned as base64
+// so the Places API key never appears in generated HTML.
+
+function fetchBinary(url, maxBytes) {
+  return new Promise((resolve) => {
+    const req = https.get(url, (r) => {
+      // Places photo endpoint 302s to the real image host
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+        r.resume();
+        return resolve(fetchBinary(r.headers.location, maxBytes));
+      }
+      if (r.statusCode !== 200) { r.resume(); return resolve(null); }
+      const chunks = [];
+      let total = 0;
+      r.on('data', (c) => {
+        total += c.length;
+        if (total > maxBytes) { req.destroy(); return resolve(null); }
+        chunks.push(c);
+      });
+      r.on('end', () => resolve({
+        b64: Buffer.concat(chunks).toString('base64'),
+        type: r.headers['content-type'] || 'image/jpeg'
+      }));
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(12000, () => { req.destroy(); resolve(null); });
+  });
+}
+
+async function fetchPlacePhotos(photoRefs, howMany) {
+  const out = [];
+  for (const ref of (photoRefs || []).slice(0, howMany)) {
+    const url = 'https://maps.googleapis.com/maps/api/place/photo'
+      + '?maxwidth=1200&photo_reference=' + encodeURIComponent(ref)
+      + '&key=' + process.env.GOOGLE_PLACES_API_KEY;
+    const img = await fetchBinary(url, 4 * 1024 * 1024);
+    if (img) out.push(img);
+  }
+  return out;
+}
+
+// Real logo if they have a website; a clean monogram if they don't.
+async function fetchLogo(websiteUrl, businessName, color) {
+  let domain = '';
+  try { if (websiteUrl) domain = new URL(websiteUrl).hostname.replace(/^www\./, ''); } catch (e) {}
+
+  if (domain) {
+    const img = await fetchBinary('https://www.google.com/s2/favicons?sz=256&domain=' + domain, 512 * 1024);
+    // a 16px default favicon means Google had nothing real — fall through to monogram
+    if (img && img.b64.length > 900) {
+      return { b64: img.b64, type: img.type, source: 'website' };
+    }
+  }
+
+  const initials = (businessName || '')
+    .split(/\s+/).filter(Boolean).slice(0, 2)
+    .map(w => w[0].toUpperCase()).join('') || 'B';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">'
+    + '<rect width="128" height="128" rx="26" fill="' + (color || '#1a2332') + '"/>'
+    + '<text x="64" y="64" fill="#fff" font-family="Georgia,serif" font-size="56" '
+    + 'font-weight="700" text-anchor="middle" dominant-baseline="central">' + initials + '</text></svg>';
+  return { b64: Buffer.from(svg).toString('base64'), type: 'image/svg+xml', source: 'monogram' };
+}
+
 app.post('/research-business', async (req, res) => {
   const { businessName, city, state } = req.body;
   if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
@@ -1021,6 +1087,11 @@ app.post('/research-business', async (req, res) => {
     yelpUrl: '',
     googleUrl: '',
     photos: [],
+    photoRefs: [],
+    reviewTexts: [],
+    logoB64: '',
+    logoType: '',
+    logoSource: '',
     isBlackOwned: false,
     isWomanOwned: false,
     isLatinoOwned: false,
@@ -1046,7 +1117,7 @@ app.post('/research-business', async (req, res) => {
       result.category = (place.types || [])[0]?.replace(/_/g, ' ') || '';
 
       // Get full details
-      const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,website,opening_hours,editorial_summary,url&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+      const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,formatted_address,website,opening_hours,editorial_summary,url,reviews,photos,rating,user_ratings_total&key=${process.env.GOOGLE_PLACES_API_KEY}`;
       const detail = await new Promise((resolve, reject) => {
         https.get(detailUrl, (r) => {
           let data = '';
@@ -1057,9 +1128,25 @@ app.post('/research-business', async (req, res) => {
 
       const d = detail.result || {};
       result.phone = d.formatted_phone_number || '';
+      result.address = d.formatted_address || '';
       result.website = d.website || '';
       result.googleUrl = d.url || '';
       result.description = d.editorial_summary?.overview || '';
+      if (d.rating) result.rating = d.rating;
+      if (d.user_ratings_total) result.reviews = d.user_ratings_total;
+
+      // real Google reviews — 4 stars and up, with actual text
+      result.reviewTexts = (d.reviews || [])
+        .filter(r => r.text && r.text.trim().length > 40 && (r.rating || 0) >= 4)
+        .slice(0, 3)
+        .map(r => ({
+          author: r.author_name || 'Google reviewer',
+          rating: r.rating || 5,
+          text: r.text.trim().slice(0, 320),
+          when: r.relative_time_description || ''
+        }));
+
+      result.photoRefs = (d.photos || []).map(p => p.photo_reference).filter(Boolean);
       if (d.opening_hours?.weekday_text) {
         result.hours = d.opening_hours.weekday_text;
       }
@@ -1098,6 +1185,26 @@ If you don't know specific URLs, leave them as empty strings. Base services on w
     result.isWomanOwned = parsed.isWomanOwned || false;
     result.isLatinoOwned = parsed.isLatinoOwned || false;
   } catch(e) {}
+
+  // 3. Pull their actual photos and logo so the demo looks like THEIR business
+  try {
+    const imgs = await fetchPlacePhotos(result.photoRefs, 4);
+    if (imgs[0]) { result.photoB64  = imgs[0].b64; result.photoType  = imgs[0].type; }
+    if (imgs[1]) { result.photo2B64 = imgs[1].b64; result.photo2Type = imgs[1].type; }
+    if (imgs[2]) { result.photo3B64 = imgs[2].b64; result.photo3Type = imgs[2].type; }
+    if (imgs[3]) { result.photo4B64 = imgs[3].b64; result.photo4Type = imgs[3].type; }
+    result.photoCount = imgs.length;
+  } catch(e) { result.photoCount = 0; }
+
+  try {
+    const logo = await fetchLogo(result.website, result.name, req.body.primaryColor);
+    result.logoB64 = logo.b64;
+    result.logoType = logo.type;
+    result.logoSource = logo.source;
+  } catch(e) {}
+
+  // photo references are internal plumbing — don't ship them to the browser
+  delete result.photoRefs;
 
   res.json(result);
 });
