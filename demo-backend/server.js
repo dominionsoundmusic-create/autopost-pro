@@ -916,7 +916,16 @@ Return ONLY valid JSON: {"description":"2-3 sentences","tagline":"Short tagline.
   };
 
   const html = buildPremiumSite(data);
-  res.json({ html });
+  const demoId = saveDemo({
+    business: businessName, city, type: businessType,
+    phone, hasWebsite: !!websiteUrl
+  }, html);
+
+  res.json({
+    html,
+    demoId,
+    shareUrl: demoId ? (process.env.PUBLIC_URL || 'https://dominion-demo-backend.onrender.com') + '/demo/' + demoId : null
+  });
 });
 
 
@@ -1088,9 +1097,8 @@ async function fetchLogo(websiteUrl, businessName, color) {
   return { b64: Buffer.from(svg).toString('base64'), type: 'image/svg+xml', source: 'monogram' };
 }
 
-app.post('/research-business', async (req, res) => {
-  const { businessName, city, state } = req.body;
-  if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
+async function researchBusiness(input) {
+  const { businessName, city, state } = input;
 
   const result = {
     name: businessName,
@@ -1220,7 +1228,7 @@ If you don't know specific URLs, leave them as empty strings. Base services on w
   } catch(e) { result.photoCount = 0; }
 
   try {
-    const logo = await fetchLogo(result.website, result.name, req.body.primaryColor);
+    const logo = await fetchLogo(result.website, result.name, input.primaryColor);
     result.logoB64 = logo.b64;
     result.logoType = logo.type;
     result.logoSource = logo.source;
@@ -1229,7 +1237,239 @@ If you don't know specific URLs, leave them as empty strings. Base services on w
   // photo references are internal plumbing — don't ship them to the browser
   delete result.photoRefs;
 
-  res.json(result);
+  return result;
+}
+
+app.post('/research-business', async (req, res) => {
+  const { businessName, city } = req.body;
+  if (!businessName || !city) return res.status(400).json({ error: 'businessName and city required' });
+  try {
+    res.json(await researchBusiness(req.body));
+  } catch (err) {
+    console.error('research-business error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DEMO LIBRARY ──────────────────────────────────────────────────────────
+// Every demo built gets saved, gets its own shareable link, and records how
+// many times the prospect opened it.
+//
+// NOTE ON PERSISTENCE: this writes to the service's local disk. Render wipes
+// that on every redeploy, so treat it as a working library, not an archive.
+// Anything you want kept permanently should be deployed to Netlify (the URL
+// is stored alongside the record and survives redeploys).
+
+const fsp = require('fs');
+const pathMod = require('path');
+const DEMO_DIR = process.env.DEMO_DIR || pathMod.join(__dirname, 'demo-data');
+const DEMO_INDEX = pathMod.join(DEMO_DIR, 'index.json');
+
+function ensureDemoDir() {
+  try { fsp.mkdirSync(DEMO_DIR, { recursive: true }); } catch (e) {}
+}
+
+function loadDemoIndex() {
+  ensureDemoDir();
+  try { return JSON.parse(fsp.readFileSync(DEMO_INDEX, 'utf8')); }
+  catch (e) { return []; }
+}
+
+function saveDemoIndex(list) {
+  ensureDemoDir();
+  try { fsp.writeFileSync(DEMO_INDEX, JSON.stringify(list, null, 2)); }
+  catch (e) { console.error('demo index write failed:', e.message); }
+}
+
+function newDemoId() {
+  return Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+}
+
+function saveDemo(meta, html) {
+  ensureDemoDir();
+  const id = newDemoId();
+  try {
+    fsp.writeFileSync(pathMod.join(DEMO_DIR, id + '.html'), html);
+  } catch (e) {
+    console.error('demo html write failed:', e.message);
+    return null;
+  }
+  const list = loadDemoIndex();
+  list.unshift({
+    id,
+    business: meta.business || 'Untitled',
+    city: meta.city || '',
+    type: meta.type || '',
+    phone: meta.phone || '',
+    hasWebsite: !!meta.hasWebsite,
+    createdAt: new Date().toISOString(),
+    views: 0,
+    lastViewed: null,
+    netlifyUrl: '',
+    status: 'new'
+  });
+  saveDemoIndex(list.slice(0, 500));
+  return id;
+}
+
+// The prospect's own view of the demo — this is what gets counted.
+app.get('/demo/:id', (req, res) => {
+  const id = (req.params.id || '').replace(/[^a-z0-9]/gi, '');
+  const file = pathMod.join(DEMO_DIR, id + '.html');
+  if (!id || !fsp.existsSync(file)) {
+    return res.status(404).send('<h1 style="font-family:system-ui;padding:60px">Demo not found</h1>' +
+      '<p style="font-family:system-ui;padding:0 60px;color:#666">This preview may have expired. Call 903-636-7511.</p>');
+  }
+  // don't count your own previews
+  if (req.query.preview !== '1') {
+    const list = loadDemoIndex();
+    const rec = list.find(d => d.id === id);
+    if (rec) {
+      rec.views = (rec.views || 0) + 1;
+      rec.lastViewed = new Date().toISOString();
+      if (rec.status === 'new') rec.status = 'viewed';
+      saveDemoIndex(list);
+      console.log('Demo viewed: ' + rec.business + ' (' + rec.views + ' total)');
+    }
+  }
+  res.type('html').send(fsp.readFileSync(file, 'utf8'));
+});
+
+// The library — everything built, newest first, with view counts.
+app.get('/demos', (req, res) => {
+  res.json({ demos: loadDemoIndex() });
+});
+
+// Update a record: mark the Netlify URL, or set a status like "sent" / "won".
+app.post('/demos/:id', (req, res) => {
+  const id = (req.params.id || '').replace(/[^a-z0-9]/gi, '');
+  const list = loadDemoIndex();
+  const rec = list.find(d => d.id === id);
+  if (!rec) return res.status(404).json({ error: 'Not found' });
+  if (typeof req.body.netlifyUrl === 'string') rec.netlifyUrl = req.body.netlifyUrl;
+  if (typeof req.body.status === 'string') rec.status = req.body.status;
+  if (typeof req.body.note === 'string') rec.note = req.body.note;
+  saveDemoIndex(list);
+  res.json(rec);
+});
+
+app.delete('/demos/:id', (req, res) => {
+  const id = (req.params.id || '').replace(/[^a-z0-9]/gi, '');
+  const list = loadDemoIndex().filter(d => d.id !== id);
+  saveDemoIndex(list);
+  try { fsp.unlinkSync(pathMod.join(DEMO_DIR, id + '.html')); } catch (e) {}
+  res.json({ deleted: true });
+});
+
+// ── LOOK UP A BUSINESS FROM A URL ─────────────────────────────────────────
+// Paste a Facebook page, a website, or a Google Maps link and get the full
+// research back — including whether they already have a website.
+
+function fetchPageTitle(url) {
+  return new Promise((resolve) => {
+    const lib = url.startsWith('http://') ? require('http') : https;
+    const req = lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DominionBot/1.0)' } }, (r) => {
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+        r.resume();
+        return resolve(fetchPageTitle(new URL(r.headers.location, url).href));
+      }
+      let data = '';
+      r.on('data', (c) => {
+        data += c;
+        if (data.length > 60000) { req.destroy(); }
+      });
+      r.on('end', () => {
+        const m = data.match(/<title[^>]*>([^<]{2,140})<\/title>/i);
+        resolve(m ? m[1].trim() : '');
+      });
+    });
+    req.on('error', () => resolve(''));
+    req.setTimeout(8000, () => { req.destroy(); resolve(''); });
+  });
+}
+
+function nameFromUrl(rawUrl) {
+  let u;
+  try { u = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl); }
+  catch (e) { return { hint: '', kind: 'invalid' }; }
+
+  const host = u.hostname.replace(/^www\./, '').toLowerCase();
+  const parts = u.pathname.split('/').filter(Boolean);
+  const deslug = (t) => decodeURIComponent(t || '')
+    .replace(/[-_+]+/g, ' ')
+    .replace(/\b\d{6,}\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (host.includes('facebook.com')) {
+    let seg = parts[0] || '';
+    if (seg === 'p' || seg === 'pages') seg = parts[1] || '';
+    if (seg === 'profile.php') return { hint: '', kind: 'facebook' };
+    return { hint: deslug(seg), kind: 'facebook' };
+  }
+  if (host.includes('instagram.com')) {
+    return { hint: deslug(parts[0] || ''), kind: 'instagram' };
+  }
+  if (host.includes('google.') && u.pathname.includes('/place/')) {
+    const i = parts.indexOf('place');
+    return { hint: deslug(parts[i + 1] || ''), kind: 'maps' };
+  }
+  if (host.includes('yelp.com')) {
+    const i = parts.indexOf('biz');
+    return { hint: deslug(parts[i + 1] || ''), kind: 'yelp' };
+  }
+  // plain website — the domain itself is usually the business name
+  const bare = host.replace(/\.(com|net|org|biz|co|us|info|services|pro)$/i, '');
+  return { hint: deslug(bare.split('.').pop()), kind: 'website' };
+}
+
+app.post('/lookup-url', async (req, res) => {
+  const { url, city, state } = req.body;
+  if (!url) return res.status(400).json({ error: 'url required' });
+
+  try {
+    const { hint, kind } = nameFromUrl(url);
+    if (kind === 'invalid') return res.status(400).json({ error: 'That does not look like a valid URL.' });
+
+    let name = hint;
+
+    // For a real website the <title> is usually the cleanest business name
+    if (kind === 'website') {
+      const title = await fetchPageTitle(url.startsWith('http') ? url : 'https://' + url);
+      if (title) {
+        const cleaned = title.split(/[|\u2013\u2014\-\u00b7]/)[0].trim();
+        if (cleaned.length >= 3 && cleaned.length <= 70) name = cleaned;
+      }
+    }
+
+    if (!name) {
+      return res.status(422).json({
+        error: 'Could not work out the business name from that link. Type the name and city instead.',
+        kind
+      });
+    }
+
+    if (!city) {
+      return res.json({ needsCity: true, guessedName: name, kind,
+        message: 'Found "' + name + '". Which city are they in?' });
+    }
+
+    const result = await researchBusiness({ businessName: name, city, state, primaryColor: req.body.primaryColor });
+    result.sourceUrl = url;
+    result.sourceKind = kind;
+    result.hasWebsite = !!result.website;
+
+    // if the link they pasted IS the website, that answers the question directly
+    if (kind === 'website' && !result.website) {
+      result.website = url;
+      result.hasWebsite = true;
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('lookup-url error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── PUSH TO GHL ───────────────────────────────────────────────────────────
