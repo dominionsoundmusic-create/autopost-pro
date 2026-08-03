@@ -177,8 +177,17 @@ function callClaude(prompt) {
       let data = '';
       res.on('data', d => data += d);
       res.on('end', () => {
-        try { resolve(JSON.parse(data).content[0].text); }
-        catch { reject(new Error('Claude parse error')); }
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.error) {
+            return reject(new Error('Anthropic API: ' + (parsed.error.message || parsed.error.type || 'unknown error')));
+          }
+          if (!parsed.content || !parsed.content[0]) {
+            return reject(new Error('Anthropic API returned no content: ' + data.slice(0, 300)));
+          }
+          resolve(parsed.content[0].text);
+        }
+        catch (e) { reject(new Error('Claude parse error: ' + e.message + ' — raw: ' + data.slice(0, 300))); }
       });
     });
     req.on('error', reject);
@@ -733,12 +742,26 @@ app.post('/chat', async (req, res) => {
       const req2 = https.request(options, (r) => {
         let data = '';
         r.on('data', chunk => data += chunk);
-        r.on('end', () => resolve(JSON.parse(data)));
+        r.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch (e) { reject(new Error('Bad response from AI service (HTTP ' + r.statusCode + '): ' + data.slice(0, 300))); }
+        });
       });
       req2.on('error', reject);
+      req2.setTimeout(60000, () => { req2.destroy(new Error('AI service timed out after 60s')); });
       req2.write(body);
       req2.end();
     });
+    if (result.error) {
+      console.error('Anthropic returned an error:', JSON.stringify(result.error));
+      return res.status(502).json({
+        error: 'AI service error: ' + (result.error.message || result.error.type || 'unknown')
+      });
+    }
+    if (!result.content || !result.content[0]) {
+      console.error('Anthropic returned no content:', JSON.stringify(result).slice(0, 400));
+      return res.status(502).json({ error: 'AI service returned an empty response.' });
+    }
     res.json({ content: result.content[0].text });
   } catch (err) {
     console.error('Chat error:', err);
