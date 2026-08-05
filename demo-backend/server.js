@@ -717,6 +717,98 @@ app.post('/claim-preview', async (req, res) => {
   res.json({ success: true });
 });
 
+// ── HARD MONEY BORROWER LEADS ────────────────────────────────────────────
+// Deliberately separate from the agency CRM. These go straight to email (and
+// a text if Twilio is configured) — nothing touches GoHighLevel.
+
+function sendEmail(subject, text) {
+  return new Promise((resolve) => {
+    const key = process.env.RESEND_API_KEY;
+    const to = process.env.HARDMONEY_EMAIL || process.env.ALERT_EMAIL;
+    if (!key || !to) { console.log('  email skipped: RESEND_API_KEY or HARDMONEY_EMAIL not set'); return resolve(false); }
+    const body = JSON.stringify({
+      from: 'Dominion Hard Money <leads@dominionhardmoney.com>',
+      to: [to], subject: subject, text: text
+    });
+    const req = https.request({
+      hostname: 'api.resend.com', path: '/emails', method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
+                 'Content-Length': Buffer.byteLength(body) }
+    }, (r) => { r.resume(); resolve(r.statusCode >= 200 && r.statusCode < 300); });
+    req.on('error', (e) => { console.error('  email failed:', e.message); resolve(false); });
+    req.setTimeout(15000, () => { req.destroy(); resolve(false); });
+    req.write(body); req.end();
+  });
+}
+
+app.post('/hard-money-lead', async (req, res) => {
+  const b = req.body || {};
+  if (!b.name || !b.phone) return res.status(400).json({ error: 'Name and phone are required' });
+
+  // Flag the things that kill a deal before it reaches an analyst — the
+  // 5 Basic Musts and 3 Must-Nots from the broker training.
+  const num = (v) => { const n = parseFloat(String(v || '').replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+  const arv = num(b.arv), rehab = num(b.rehab), price = num(b.purchase_price);
+  const mao = arv ? Math.round(arv * 0.7 - rehab) : 0;   // ARV x 70% - repairs
+
+  const flags = [];
+  if (/^Yes/i.test(b.owner_occupied || '')) flags.push('OWNER-OCCUPIED — not fundable');
+  if (/personal name/i.test(b.entity || '')) flags.push('No entity — needs an LLC');
+  if (/Under 600|600.649/i.test(b.credit || '')) flags.push('Credit below 650');
+  if (/first/i.test(b.experience || '')) flags.push('First deal — no track record');
+  if (!b.cash_in || /^(none|0|no)$/i.test(b.cash_in.trim())) flags.push('No skin in the game stated');
+  if (mao && price && price > mao) flags.push('Purchase price is above 70% MAO (' + mao.toLocaleString() + ')');
+
+  const lines = [
+    'NEW HARD MONEY LEAD',
+    '',
+    'Name:            ' + (b.name || ''),
+    'Phone:           ' + (b.phone || ''),
+    'Email:           ' + (b.email || ''),
+    'Entity:          ' + (b.entity || 'not stated'),
+    'Credit:          ' + (b.credit || 'not stated'),
+    'Experience:      ' + (b.experience || 'not stated'),
+    '',
+    'Property:        ' + (b.property || '') + '  (' + (b.source_state || '') + ')',
+    'Purchase/Refi:   ' + (b.purpose || 'not stated'),
+    'Plan:            ' + (b.loan_type || ''),
+    'Owner-occupied:  ' + (b.owner_occupied || 'not stated'),
+    '',
+    'Purchase price:  ' + (b.purchase_price || 'not stated'),
+    'As-is value:     ' + (b.as_is_value || 'not stated'),
+    'Rehab budget:    ' + (b.rehab || 'not stated'),
+    'ARV:             ' + (b.arv || 'not stated'),
+    'Loan needed:     ' + (b.loan_amount || 'not stated'),
+    'Their cash in:   ' + (b.cash_in || 'not stated'),
+    mao ? 'MAO (ARV x70% - rehab): $' + mao.toLocaleString() : '',
+    '',
+    'Exit strategy:',
+    (b.exit_strategy || '').trim() || '(nothing written)',
+    '',
+    '---',
+    flags.length ? 'WATCH OUT:\n  - ' + flags.join('\n  - ') : 'No obvious disqualifiers.',
+    '',
+    'Texts OK:        ' + (b.sms_consent ? 'YES — consented ' + (b.consent_timestamp || '') : 'no'),
+    'Came from:       ' + (b.source_url || ''),
+    'Received:        ' + new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })
+  ].filter(l => l !== '');
+  const text = lines.join('\n');
+
+  console.log('Hard money lead: ' + b.name + ' — ' + (b.property || '') + ' — ' + (b.loan_amount || ''));
+
+  const emailed = await sendEmail(
+    'Hard money lead: ' + b.name + ' (' + (b.property || 'no location') + ')', text);
+
+  if (process.env.NOTIFY_PHONE_NUMBER) {
+    try {
+      sendTwilioSMS(process.env.NOTIFY_PHONE_NUMBER,
+        'Hard money lead: ' + b.name + ' ' + b.phone + ' — ' + (b.loan_amount || '') + ' ' + (b.property || ''));
+    } catch (e) {}
+  }
+
+  res.json({ success: true, emailed: emailed });
+});
+
 app.post('/chat', async (req, res) => {
   try {
     const { messages, system } = req.body;
