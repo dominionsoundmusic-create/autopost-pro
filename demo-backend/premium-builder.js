@@ -371,6 +371,21 @@ section{padding:96px 72px}
 .reviews .section-title{color:#fff}
 .reviews .section-title em{color:var(--gold)}
 .review-author{margin-top:14px;font-size:.85rem;color:var(--gold);font-weight:600;letter-spacing:.02em}
+.dlang{display:flex;align-items:stretch;background:rgba(255,255,255,.07);
+border:1.5px solid rgba(255,255,255,.2);border-radius:5px;overflow:hidden;flex:0 0 auto}
+.dlang-b{display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;
+font-family:var(--ff-body);font-size:.82em;font-weight:700;letter-spacing:.05em;
+color:rgba(255,255,255,.65);padding:10px 14px;line-height:1;transition:background .15s,color .15s}
+.dlang-b + .dlang-b{border-left:1.5px solid rgba(255,255,255,.2)}
+.dlang-b:hover{color:#fff;background:rgba(255,255,255,.1)}
+.dlang-b.is-on{background:var(--gold);color:var(--primary)}
+.dlang-b:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.dlang-f{width:24px;height:16px;border-radius:2px;overflow:hidden;display:block;flex:0 0 auto;
+box-shadow:0 0 0 1px rgba(0,0,0,.2) inset}
+.dlang-f svg{display:block;width:100%;height:100%}
+.goog-te-banner-frame,.skiptranslate iframe,#goog-gt-tt{display:none!important}
+body{top:0!important}.goog-text-highlight{background:none!important;box-shadow:none!important}
+@media(max-width:768px){.dlang-b{padding:8px 11px;font-size:.78em}.dlang-f{width:21px;height:14px}}
 .nav-logo-img{height:38px;width:38px;border-radius:9px;object-fit:cover;flex:0 0 auto}
 .reviews-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
@@ -579,6 +594,12 @@ ${phoneClean ? `<a href="tel:${phoneClean}" class="float-call" title="Call Now">
     </div>
   </a>
   <div class="nav-right">
+    <div class="dlang" id="dlang">
+      <button type="button" class="dlang-b is-on" data-lang="en" aria-pressed="true">
+        <span class="dlang-f"><svg viewBox='0 0 60 40' aria-hidden='true'><rect width='60' height='40' fill='#B22234'/><g fill='#fff'><rect y='3.1' width='60' height='3.1'/><rect y='9.2' width='60' height='3.1'/><rect y='15.4' width='60' height='3.1'/><rect y='21.5' width='60' height='3.1'/><rect y='27.7' width='60' height='3.1'/><rect y='33.8' width='60' height='3.1'/></g><rect width='26' height='21.5' fill='#3C3B6E'/></svg></span>EN</button>
+      <button type="button" class="dlang-b" data-lang="es" aria-pressed="false">
+        <span class="dlang-f"><svg viewBox='0 0 60 40' aria-hidden='true'><rect width='20' height='40' fill='#006847'/><rect x='20' width='20' height='40' fill='#fff'/><rect x='40' width='20' height='40' fill='#CE1126'/><ellipse cx='30' cy='20' rx='4.6' ry='4' fill='none' stroke='#8C6239' stroke-width='1.6'/></svg></span>ES</button>
+    </div>
     ${phone ? `<a href="tel:${phoneClean}" class="nav-phone">${phone}</a>` : ''}
     <a href="#contact" class="nav-cta">📞 Call Now</a>
   </div>
@@ -814,6 +835,37 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 </script>
 
+
+<div id="google_translate_element" style="display:none"></div>
+<script>
+(function(){
+  var root=document.getElementById('dlang'); if(!root) return;
+  function cur(){
+    var parts=document.cookie.split(';');
+    for(var i=0;i<parts.length;i++){
+      var kv=parts[i].trim();
+      if(kv.indexOf('googtrans=')===0){
+        var bits=kv.substring(10).split('/');
+        if(bits.length>2 && bits[2]) return bits[2].toLowerCase();
+      }
+    }
+    return 'en';
+  }
+  function paint(c){root.querySelectorAll('.dlang-b').forEach(function(b){
+    var on=b.dataset.lang===c;b.classList.toggle('is-on',on);b.setAttribute('aria-pressed',on?'true':'false');});}
+  function set(c){if(c===cur())return;var h=location.hostname,v=(c==='en')?'/en/en':'/en/'+c;
+    document.cookie='googtrans='+v+';path=/';document.cookie='googtrans='+v+';path=/;domain='+h;
+    var p=h.split('.');if(p.length>1)document.cookie='googtrans='+v+';path=/;domain=.'+p.slice(-2).join('.');
+    location.reload();}
+  root.querySelectorAll('.dlang-b').forEach(function(b){b.addEventListener('click',function(){set(b.dataset.lang);});});
+  paint(cur());
+  window.googleTranslateElementInit=function(){new google.translate.TranslateElement(
+    {pageLanguage:'en',includedLanguages:'en,es',autoDisplay:false},'google_translate_element');};
+  var s=document.createElement('script');
+  s.src='//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>`;
 }
