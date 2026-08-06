@@ -1,6 +1,57 @@
 // ── TEMPLATE DEFINITIONS ──────────────────────────────────────────────────
 // Each template is a function that takes business data and returns full HTML
 
+// ── Shared page furniture ────────────────────────────────────────────────
+// Every template gets the same skeleton: a thin colour strip at the very top,
+// the nav, a capped hero, then a stat band closing it off. Colours and type
+// still differ per template — only the structure is shared.
+
+function dominionStrip(d) {
+  const tel = d.phone ? d.phone.replace(/\D/g, '') : '';
+  const bits = [];
+  if (d.city) bits.push('Serving ' + d.city + (d.state ? ', ' + d.state : ''));
+  if (d.phone) bits.push('Call <a href="tel:' + tel + '">' + d.phone + '</a>');
+  return '<div class="dstrip">' + bits.join(' &nbsp;·&nbsp; ') + '</div>';
+}
+
+function dominionBand(d) {
+  const items = [];
+  if (d.rating) items.push(['★ ' + d.rating, 'Google rating']);
+  if (d.reviews) items.push([d.reviews, 'Reviews']);
+  if (d.city) items.push([d.city, 'Where we work']);
+  if (d.phone) items.push([d.phone, 'Call us']);
+  if (!items.length) return '';
+  return '<div class="dband"><div class="dband-in">' +
+    items.slice(0, 4).map(function (i) {
+      return '<div class="dband-i"><b>' + i[0] + '</b><span>' + i[1] + '</span></div>';
+    }).join('') + '</div></div>';
+}
+
+function dominionCSS(accent, dark) {
+  // Use each template's own --gold accent so the strip and band read clearly.
+  // Passing the primary colour here made them dark-on-dark and unreadable.
+  return (
+    '.dstrip{background:var(--gold,' + accent + ');color:#14161c;text-align:center;padding:9px 20px;' +
+    'font-size:.84em;font-weight:700;letter-spacing:.01em}' +
+    '.dstrip a{color:#14161c;text-decoration:none;border-bottom:1px solid rgba(0,0,0,.35)}' +
+    '.dband{background:' + dark + ';border-top:1px solid rgba(255,255,255,.09)}' +
+    '.dband-in{display:grid;grid-template-columns:repeat(4,1fr);' +
+    'padding-left:clamp(22px,5.5vw,140px);padding-right:clamp(22px,5.5vw,140px)}' +
+    '.dband-i{padding:21px 22px;border-left:1px solid rgba(255,255,255,.09)}' +
+    '.dband-i:first-child{border-left:0;padding-left:0}' +
+    '.dband-i b{display:block;font-size:1.3em;color:var(--gold,' + accent + ');font-weight:800;line-height:1.2}' +
+    '.dband-i span{font-size:.8em;color:rgba(255,255,255,.7)}' +
+    // the nav is position:fixed at top:0 in these templates and would sit on
+    // top of the strip, so push it down by the strip's height
+    'nav{top:33px!important}' +
+    'body{padding-top:0}' +
+    '.hero,.hero-photo-section{height:calc(100vh - 156px)!important;max-height:700px!important;min-height:520px!important}' +
+    '@media(max-width:900px){.dband-in{grid-template-columns:1fr 1fr}' +
+    '.dband-i:nth-child(3){border-left:0;padding-left:0}' +
+    '.hero,.hero-photo-section{height:auto!important;max-height:none!important;min-height:0!important}}'
+  );
+}
+
 function buildModernTemplate(data) {
   const { name, type, city, phone, address, rating, reviews, description, services, tagline, photoB64, photoType, primaryColor } = data;
   const color = primaryColor || '#1a2332';
@@ -68,9 +119,11 @@ footer{background:#0a0a0a;padding:28px 56px;display:flex;align-items:center;just
 .footer-brand{color:#fff;font-weight:700;font-size:.9em}
 .footer-copy{color:#555;font-size:.75em}
 @media(max-width:768px){nav{padding:0 16px}.hero-content{padding:120px 20px 80px}section{padding:56px 20px}.services-grid{grid-template-columns:1fr}.about-grid{grid-template-columns:1fr}.hero-stats{gap:20px}.cta{padding:56px 20px}footer{padding:20px 16px;flex-direction:column;align-items:flex-start}}
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name.split(' ')[0]} <span>${name.split(' ').slice(1).join(' ')}</span></a>
   <div style="display:flex;align-items:center;gap:20px">
@@ -91,6 +144,7 @@ footer{background:#0a0a0a;padding:28px 56px;display:flex;align-items:center;just
     ${rating ? `<div class="hero-stats"><div><div class="stat-num">${rating}★</div><div class="stat-label">Rating</div></div><div><div class="stat-num">${reviews}+</div><div class="stat-label">Reviews</div></div></div>` : ''}
   </div>
 </div>
+${dominionBand(data)}
 <section id="services" style="background:#fff">
   <div class="section-inner">
     <div class="eyebrow">What We Offer</div>
@@ -188,9 +242,11 @@ footer{background:#000;padding:24px 56px;display:flex;align-items:center;justify
 .footer-logo{font-family:'Oswald',sans-serif;font-size:1em;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase}
 .footer-copy{font-size:.72em;color:#333}
 @media(max-width:768px){nav{padding:0 16px}.hero-content{padding:110px 20px 80px}section{padding:56px 20px}.stats-grid{grid-template-columns:1fr;gap:24px}.cta{padding:56px 20px}footer{padding:16px;flex-direction:column;gap:8px}}
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name}</a>
   <a href="#contact" class="nav-cta">Call Now</a>
@@ -208,6 +264,7 @@ footer{background:#000;padding:24px 56px;display:flex;align-items:center;justify
   </div>
 </div>
 ${rating || reviews ? `<div class="stats-band"><div class="stats-grid">${rating ? `<div><div class="stat-num">${rating}★</div><div class="stat-label">Rating</div></div>` : ''}<div><div class="stat-num">${reviews || '100'}+</div><div class="stat-label">Clients Served</div></div><div><div class="stat-num">100%</div><div class="stat-label">Satisfaction</div></div></div></div>` : ''}
+${dominionBand(data)}
 <section id="services">
   <div class="section-inner">
     <div class="section-tag">What We Do</div>
@@ -299,9 +356,11 @@ footer{background:#0f0f0f;padding:32px 72px;display:flex;align-items:center;just
 .footer-brand{font-family:'Playfair Display',serif;font-size:.95em;color:#fff;font-style:italic}
 .footer-copy{font-size:.72em;color:#333}
 @media(max-width:768px){nav{padding:0 16px}.nav-links{display:none}.hero-content{padding:120px 20px 80px}section{padding:56px 20px}.services-grid{grid-template-columns:1fr}.about-grid{grid-template-columns:1fr}.cta{padding:56px 20px}footer{padding:20px;flex-direction:column}}
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name}</a>
   <div class="nav-links">
@@ -324,6 +383,7 @@ footer{background:#0f0f0f;padding:32px 72px;display:flex;align-items:center;just
     </div>
   </div>
 </div>
+${dominionBand(data)}
 <section id="services" style="background:#fff">
   <div class="section-inner">
     <div class="ornament">Services</div>
@@ -426,9 +486,11 @@ footer{background:var(--dark);padding:28px 56px;display:flex;align-items:center;
 .footer-brand{font-family:'Merriweather',serif;font-size:.9em;color:#fff;font-style:italic}
 .footer-copy{font-size:.72em;color:#664}
 @media(max-width:768px){nav{padding:0 16px}.hero-content{padding:110px 20px 80px}section{padding:56px 20px}.services-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr;gap:20px}.community,.cta{padding:48px 20px}footer{padding:20px;flex-direction:column}}
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name}</a>
   <a href="#contact" class="nav-cta">Call Now</a>
@@ -445,6 +507,7 @@ footer{background:var(--dark);padding:28px 56px;display:flex;align-items:center;
     </div>
   </div>
 </div>
+${dominionBand(data)}
 <section id="services" style="background:var(--cream)">
   <div class="section-inner">
     <div class="section-kicker">What We Do</div>
@@ -530,9 +593,11 @@ footer{background:#f9f9f9;padding:24px 56px;display:flex;align-items:center;just
 .footer-brand{font-size:.85em;font-weight:700;color:#111}
 .footer-copy{font-size:.72em;color:var(--mid)}
 @media(max-width:768px){nav{padding:0 16px}.hero-content{padding:110px 20px 80px}section{padding:56px 20px}.services-grid{grid-template-columns:1fr}.about-grid{grid-template-columns:1fr}.about-nums{flex-direction:column;gap:20px}.cta{padding:56px 20px}footer{padding:16px;flex-direction:column;gap:8px}}
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name}</a>
   <a href="#contact" class="nav-cta">${phone || 'Contact Us'}</a>
@@ -549,6 +614,7 @@ footer{background:#f9f9f9;padding:24px 56px;display:flex;align-items:center;just
     </div>
   </div>
 </div>
+${dominionBand(data)}
 <section id="services">
   <div class="section-inner">
     <div class="section-label">Services</div>
@@ -712,9 +778,11 @@ footer{background:#030810;padding:32px 72px;display:flex;align-items:center;just
   .cta{padding:56px 24px}
   footer{padding:24px;flex-direction:column;align-items:flex-start}
 }
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name.split(' ')[0]} <span>${name.split(' ').slice(1).join(' ') || type}</span></a>
   <div class="nav-actions">
@@ -754,6 +822,7 @@ footer{background:#030810;padding:32px 72px;display:flex;align-items:center;just
   </div>
 </div>
 
+${dominionBand(data)}
 <section class="services" id="services">
   <div class="section-inner">
     <div class="eyebrow">What We Offer</div>
@@ -909,9 +978,11 @@ footer{background:#000;padding:28px 72px;display:flex;align-items:center;justify
   .cta{padding:56px 20px}
   footer{padding:20px;flex-direction:column}
 }
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name.split(' ')[0]}<span>${name.split(' ').slice(1).join(' ')||''}</span></a>
   <a href="#contact" class="nav-cta">Call Now</a>
@@ -937,6 +1008,7 @@ footer{background:#000;padding:28px 72px;display:flex;align-items:center;justify
   </div>
 </div>
 
+${dominionBand(data)}
 <section class="services" id="services">
   <div class="section-inner">
     <div class="eyebrow">What We Do</div>
@@ -1095,9 +1167,11 @@ footer{background:#050505;padding:32px 64px;display:flex;align-items:center;just
   .cta{padding:56px 20px}
   footer{padding:20px;flex-direction:column}
 }
+${dominionCSS('#c9a84c', '#14161c')}
 </style>
 </head>
 <body>
+${dominionStrip(data)}
 <nav>
   <a href="/" class="nav-logo">${name}</a>
   <a href="#contact" class="nav-cta">📞 Call Now</a>
@@ -1128,6 +1202,7 @@ footer{background:#050505;padding:32px 64px;display:flex;align-items:center;just
   </div>
 </div>
 
+${dominionBand(data)}
 <section class="services" id="services">
   <div class="section-inner">
     <div class="section-kicker">What We Offer</div>
