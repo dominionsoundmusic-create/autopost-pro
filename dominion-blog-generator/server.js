@@ -567,18 +567,49 @@ async function commitToGitHub(owner, repo, path, content, message) {
   }
 }
 
+// List the topic slugs a brand has already published, so we never repeat one.
+async function listPublishedSlugs(brand) {
+  try {
+    const res = await axios.get(
+      `https://api.github.com/repos/${brand.repo_owner}/${brand.repo_name}/contents/${brand.blog_path}`,
+      { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+    );
+    // drop the -<timestamp> suffix so repeats of one topic collapse together
+    return res.data
+      .filter(f => f.name.endsWith('.html') && f.name !== 'index.html')
+      .map(f => f.name.replace(/\.html$/, '').replace(/-\d{10,}$/, ''));
+  } catch (e) {
+    console.log('  (could not read existing posts — falling back to random)');
+    return null;
+  }
+}
+
 // Generate and publish one blog post for a brand
 async function publishBlogPost(brand) {
   console.log(`\n📝 Generating blog post for ${brand.name}...`);
 
-  // Pick a random topic
-  const topic = brand.topics[Math.floor(Math.random() * brand.topics.length)];
-  console.log(`Topic: ${topic.replace('{city}', brand.city || 'Your Area')}`);
+  // Pick a topic this brand has NOT published yet. Picking at random with no
+  // memory of past posts is what produced duplicate posts on separate URLs.
+  const year = new Date().getFullYear();
+  const resolve = t => t.replace('{year}', year).replace('{industry}', 'Local').replace('{city}', brand.city || 'Your Area');
+  const published = await listPublishedSlugs(brand);
+  let topic;
+  if (published === null) {
+    topic = brand.topics[Math.floor(Math.random() * brand.topics.length)];
+  } else {
+    const unused = brand.topics.filter(t => !published.includes(slugify(resolve(t))));
+    if (!unused.length) {
+      console.log(`  every topic already published for ${brand.name} — skipping rather than duplicating`);
+      return { success: false, skipped: true, brand: brand.name, reason: 'all topics published' };
+    }
+    topic = unused[Math.floor(Math.random() * unused.length)];
+    console.log(`  ${unused.length} of ${brand.topics.length} topics still unpublished`);
+  }
+  console.log(`Topic: ${resolve(topic)}`);
 
   // Generate content
   const content = await generateBlogPost(brand, topic);
-  const year = new Date().getFullYear();
-  const resolvedTopic = topic.replace('{year}', year).replace('{industry}', 'Local').replace('{city}', brand.city || 'Your Area');
+  const resolvedTopic = resolve(topic);
   const slug = slugify(resolvedTopic) + '-' + Date.now();
 
   // Wrap in full HTML page
