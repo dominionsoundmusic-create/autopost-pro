@@ -163,6 +163,34 @@ function fetchUnsplash(query) {
   });
 }
 
+
+// Models occasionally wrap JSON in prose or a code fence. Take the outermost
+// braces rather than trusting the whole reply, and retry before giving up —
+// a silent failure here is what makes social buttons appear only sometimes.
+function extractJson(text) {
+  const cleaned = String(text || '').replace(/```json|```/g, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('no JSON object found in reply: ' + cleaned.slice(0, 200));
+  }
+  return JSON.parse(cleaned.slice(start, end + 1));
+}
+
+async function callClaudeJson(prompt, attempts = 3, label = 'ai') {
+  let lastErr;
+  for (let n = 1; n <= attempts; n++) {
+    try {
+      return extractJson(await callClaude(prompt));
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[${label}] attempt ${n} of ${attempts} failed: ${e.message}`);
+      if (n < attempts) await new Promise(r => setTimeout(r, 400 * n));
+    }
+  }
+  throw lastErr;
+}
+
 function callClaude(prompt) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
@@ -897,7 +925,7 @@ app.post('/search-businesses', async (req, res) => {
         biz.website = detail.result?.website || '';
         biz.phone = detail.result?.formatted_phone_number || '';
         biz.hasWebsite = !!biz.website;
-      } catch(e) {}
+      } catch(e) { console.warn('place detail lookup failed: ' + e.message); }
     }
     res.json({ businesses });
   } catch (err) {
@@ -930,7 +958,7 @@ Return ONLY JSON (no markdown):
       if (!desc) desc = parsed.description || '';
       if (!svcs.length) svcs = parsed.services || [];
       if (!tag) tag = parsed.tagline || '';
-    } catch(e) {}
+    } catch(e) { console.warn('ai copy failed after retries: ' + e.message); }
   }
 
   const data = {
@@ -986,7 +1014,7 @@ Return ONLY valid JSON: {"description":"2-3 sentences","tagline":"Short tagline.
       if (!tag) tag = parsed.tagline || '';
       if (!revs.length) revs = parsed.reviewTexts || [];
       if (!hrs.length) hrs = parsed.hours || [];
-    } catch(e) {}
+    } catch(e) { console.warn('ai enrich failed: ' + e.message); }
   }
 
   const data = {
@@ -1274,7 +1302,7 @@ async function researchBusiness(input) {
         result.hours = d.opening_hours.weekday_text;
       }
     }
-  } catch(e) {}
+  } catch(e) { console.warn('places lookup failed: ' + e.message); }
 
   // 2. AI research — find social URLs and services
   try {
@@ -1295,9 +1323,7 @@ Return ONLY a JSON object (no markdown, no explanation) with these fields:
 
 If you don't know specific URLs, leave them as empty strings. Base services on what this type of business typically offers.`;
 
-    const aiRes = await callClaude(aiPrompt);
-    const cleaned = aiRes.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = await callClaudeJson(aiPrompt, 3, 'social-research');
     result.facebookUrl = parsed.facebookUrl || '';
     result.instagramUrl = parsed.instagramUrl || '';
     result.yelpUrl = parsed.yelpUrl || '';
@@ -1307,7 +1333,10 @@ If you don't know specific URLs, leave them as empty strings. Base services on w
     result.isBlackOwned = parsed.isBlackOwned || false;
     result.isWomanOwned = parsed.isWomanOwned || false;
     result.isLatinoOwned = parsed.isLatinoOwned || false;
-  } catch(e) {}
+  } catch(e) {
+    console.warn('social research failed after retries: ' + e.message);
+    result.researchFailed = true;
+  }
 
   // 3. Pull their actual photos and logo so the demo looks like THEIR business
   try {
@@ -1317,14 +1346,14 @@ If you don't know specific URLs, leave them as empty strings. Base services on w
     if (imgs[2]) { result.photo3B64 = imgs[2].b64; result.photo3Type = imgs[2].type; }
     if (imgs[3]) { result.photo4B64 = imgs[3].b64; result.photo4Type = imgs[3].type; }
     result.photoCount = imgs.length;
-  } catch(e) { result.photoCount = 0; }
+  } catch(e) { console.warn('photo fetch failed: ' + e.message); result.photoCount = 0; }
 
   try {
     const logo = await fetchLogo(result.website, result.name, input.primaryColor);
     result.logoB64 = logo.b64;
     result.logoType = logo.type;
     result.logoSource = logo.source;
-  } catch(e) {}
+  } catch(e) { console.warn('logo fetch failed: ' + e.message); }
 
   // photo references are internal plumbing — don't ship them to the browser
   delete result.photoRefs;
