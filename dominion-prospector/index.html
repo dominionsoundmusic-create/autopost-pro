@@ -101,6 +101,15 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .btn-build{background:linear-gradient(135deg,#7c3aed,#9d8fff);color:#fff;border:none}
 .btn-build:hover{background:linear-gradient(135deg,#6d28d9,#8b7fee)}
 .btn-social{background:rgba(240,165,0,0.15);color:#f0a500;border:1px solid rgba(240,165,0,0.3)}
+.btn-speed{background:rgba(56,189,248,0.13);color:#38bdf8;border:1px solid rgba(56,189,248,0.3)}
+.btn-speed:hover{background:rgba(56,189,248,0.26)}
+.tag-speed-bad{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+.tag-speed-mid{background:rgba(240,165,0,0.15);color:#fbbf24;border:1px solid rgba(240,165,0,0.3)}
+.tag-speed-ok{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.25)}
+.speed-box{margin-top:8px;padding:10px 12px;border-radius:6px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.18)}
+.speed-box-title{font-size:0.72em;font-weight:700;color:#38bdf8;margin-bottom:5px;letter-spacing:.04em}
+.speed-line{font-size:0.75em;color:var(--mid);margin:2px 0}
+.speed-pitch{margin-top:7px;font-size:0.76em;color:var(--white);line-height:1.5;font-style:italic}
 .result-checkbox{width:16px;height:16px;cursor:pointer;accent-color:#7c3aed;flex-shrink:0;margin-right:4px}
 .bulk-bar{display:none;position:sticky;bottom:0;background:#111;border-top:2px solid #7c3aed;padding:12px 24px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;z-index:100}
 .bulk-bar.show{display:flex}
@@ -432,10 +441,12 @@ function addMessage(role, content, results = null) {
                 <input type="checkbox" class="result-checkbox" onchange="updateBulkBar()" data-idx="${i}">
                 <button class="action-btn btn-build" onclick="openBuilder(${i})">🏗️ Build</button>
                 <button class="action-btn btn-social" onclick="findSocial(${i})">🔍 Social</button>
+                ${biz.hasWebsite && biz.website ? `<button class="action-btn btn-speed" id="speed-btn-${i}" onclick="checkSpeed(${i}, this)">⚡ Speed</button>` : ''}
                 <button class="action-btn btn-add" id="add-btn-${i}" onclick="addToGHL(${i}, this)">+ GHL</button>
                 ${biz.phone ? `<button class="action-btn btn-call">📞</button>` : ''}
               </div>
             </div>
+            <div id="speed-result-${i}"></div>
             ${biz.siteIssues && biz.siteIssues.length > 0 ? `
               <div class="site-issues">
                 <div class="site-issues-title">⚠️ Website Problems</div>
@@ -851,6 +862,73 @@ function openBuilder(idx) {
   document.getElementById('builderOverlay').style.display='block';
 }
 function closeBuilder(){document.getElementById('builderOverlay').style.display='none';}
+
+
+// --- PageSpeed Insights -----------------------------------------------------
+// Google's own mobile score for a prospect's site. Runs straight from the
+// browser; PSI allows CORS and works without a key at this volume.
+// Mobile is deliberate: desktop scores flatter almost every local business.
+async function checkSpeed(i, btn) {
+  var biz = (typeof _allResults !== 'undefined' && _allResults[i]) || (typeof currentResults !== 'undefined' && currentResults[i]) || null;
+  var url = biz && (biz.website || biz.url);
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  var slot = document.getElementById('speed-result-' + i);
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  if (slot) slot.innerHTML = '<div class="speed-box"><div class="speed-box-title">⚡ PAGESPEED</div><div class="speed-line">Asking Google — this takes 20-30 seconds…</div></div>';
+
+  try {
+    var api = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
+            + '?url=' + encodeURIComponent(url)
+            + '&strategy=mobile&category=performance&category=seo&category=accessibility';
+    var res = await fetch(api);
+    if (!res.ok) throw new Error('PSI ' + res.status);
+    var d = await res.json();
+
+    var cat = d.lighthouseResult && d.lighthouseResult.categories || {};
+    var perf = cat.performance ? Math.round(cat.performance.score * 100) : null;
+    var seo  = cat.seo ? Math.round(cat.seo.score * 100) : null;
+    var a11y = cat.accessibility ? Math.round(cat.accessibility.score * 100) : null;
+    var audits = d.lighthouseResult && d.lighthouseResult.audits || {};
+    var lcp = audits['largest-contentful-paint'] ? audits['largest-contentful-paint'].displayValue : null;
+    var tbt = audits['total-blocking-time'] ? audits['total-blocking-time'].displayValue : null;
+    var secs = audits['largest-contentful-paint'] && audits['largest-contentful-paint'].numericValue
+             ? (audits['largest-contentful-paint'].numericValue / 1000) : null;
+
+    if (biz) { biz.speedScore = perf; biz.speedLCP = lcp; }
+
+    var cls = perf === null ? 'tag-speed-mid' : (perf < 50 ? 'tag-speed-bad' : (perf < 90 ? 'tag-speed-mid' : 'tag-speed-ok'));
+    var pitch = '';
+    if (secs !== null && perf !== null && perf < 90) {
+      pitch = 'I ran your site through Google\u2019s own speed test on a phone, which is how most of your customers find you. '
+            + 'It takes ' + secs.toFixed(1) + ' seconds to show the main content. Most people leave after about three. '
+            + 'That means you\u2019re losing visitors before they ever see what you do.';
+    } else if (perf !== null) {
+      pitch = 'Their site is already fast on mobile — lead with something else.';
+    }
+
+    if (slot) {
+      slot.innerHTML =
+        '<div class="speed-box">'
+        + '<div class="speed-box-title">⚡ GOOGLE PAGESPEED — MOBILE</div>'
+        + '<div class="speed-line">Performance <strong>' + (perf === null ? '?' : perf) + '/100</strong>'
+        + (seo !== null ? ' &nbsp;·&nbsp; SEO <strong>' + seo + '</strong>' : '')
+        + (a11y !== null ? ' &nbsp;·&nbsp; Accessibility <strong>' + a11y + '</strong>' : '') + '</div>'
+        + (lcp ? '<div class="speed-line">Largest content paint: <strong>' + lcp + '</strong>' + (tbt ? ' &nbsp;·&nbsp; blocking time ' + tbt : '') + '</div>' : '')
+        + (pitch ? '<div class="speed-pitch">“' + pitch + '”</div>' : '')
+        + '</div>';
+    }
+    if (btn) {
+      btn.textContent = '⚡ ' + (perf === null ? '?' : perf);
+      btn.className = 'action-btn ' + cls;
+      btn.disabled = false;
+    }
+  } catch (e) {
+    if (slot) slot.innerHTML = '<div class="speed-box"><div class="speed-line">⚠️ Speed test failed — the site may block testing or be unreachable.</div></div>';
+    if (btn) { btn.textContent = '⚡ Speed'; btn.disabled = false; }
+  }
+}
 
 async function findSocial(idx) { openBuilder(idx); setTimeout(autoResearch, 400); }
 
