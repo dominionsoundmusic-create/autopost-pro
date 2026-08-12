@@ -4,7 +4,7 @@ name: Daily Blog Generation
 # GitHub Actions cron does not observe DST, so this lands at 6:00 AM CST in winter.
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 12 * * 1'
   workflow_dispatch:        # lets you run it manually from the Actions tab
 
 jobs:
