@@ -656,24 +656,34 @@ Write brief conversational response before JSON.`;
       } catch(e) {}
     }
 
-    // 2) fall back to a bare JSON object containing "businesses"
+    // 2) fall back to ANY balanced JSON object containing "businesses",
+    //    however the model formatted it — pretty-printed, indented, unfenced.
     if (!results) {
-      var bare = fullText.indexOf('{"action"');
-      if (bare < 0) bare = fullText.search(/\{\s*"businesses"/);
-      if (bare >= 0) {
-        var depth = 0, end = -1;
-        for (var p = bare; p < fullText.length; p++) {
-          if (fullText[p] === '{') depth++;
-          else if (fullText[p] === '}') { depth--; if (depth === 0) { end = p; break; } }
-        }
-        if (end > bare) {
-          try {
-            var obj = JSON.parse(fullText.slice(bare, end + 1));
-            if (obj.businesses) {
-              results = obj.businesses;
-              displayText = (fullText.slice(0, bare) + fullText.slice(end + 1)).trim();
-            }
-          } catch(e) {}
+      var bi = fullText.indexOf('"businesses"');
+      if (bi >= 0) {
+        for (var start = bi; start >= 0; start--) {
+          if (fullText.charAt(start) !== '{') continue;
+          var depth = 0, end = -1, inStr = false, esc = false;
+          for (var p = start; p < fullText.length; p++) {
+            var ch = fullText.charAt(p);
+            if (esc) { esc = false; continue; }
+            if (ch === '\\') { esc = true; continue; }
+            if (ch === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) { end = p; break; } }
+          }
+          if (end > start) {
+            try {
+              var obj = JSON.parse(fullText.slice(start, end + 1));
+              if (obj && obj.businesses && obj.businesses.length) {
+                results = obj.businesses;
+                displayText = (fullText.slice(0, start) + fullText.slice(end + 1))
+                  .replace(/```(?:json)?/gi, '').trim();
+                break;
+              }
+            } catch (e) {}
+          }
         }
       }
     }
