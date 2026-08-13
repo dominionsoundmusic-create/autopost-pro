@@ -539,10 +539,24 @@ async function addToGHL(idx, btn) {
         tags: tags
       })
     });
-    if (!r.ok) throw new Error('push failed ' + r.status);
+    var raw = '';
+    try { raw = await r.text(); } catch (e2) {}
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — ' + raw.slice(0, 300));
+    // the backend returns 200 even when GHL rejects, so check the body too
+    try {
+      var jd = JSON.parse(raw);
+      if (jd && jd.error) throw new Error(jd.error);
+    } catch (e3) { if (e3 && e3.message && e3.message !== 'Unexpected end of JSON input') { if (String(e3.message).indexOf('JSON') === -1) throw e3; } }
   } catch(e) {
     btn.textContent = '✗ Failed';
     btn.disabled = false;
+    var slot = document.getElementById('speed-result-' + idx);
+    if (slot) {
+      slot.innerHTML = '<div class="speed-box"><div class="speed-box-title">GHL PUSH FAILED</div>'
+        + '<div class="speed-line" style="white-space:pre-wrap;word-break:break-word">'
+        + String(e.message || e).replace(/</g,'&lt;') + '</div>'
+        + '<div class="speed-line" style="opacity:.7;margin-top:6px">If this says the backend is waking up, wait a minute and click again.</div></div>';
+    }
     return;
   }
   btn.textContent = '✓ Added';
