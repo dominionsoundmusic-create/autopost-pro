@@ -314,8 +314,6 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 </div>
 
 <script>
-const GHL_API_KEY = 'pit-5a8b48af-30f8-46de-a6d9-58e6b35dffe2';
-const GHL_LOCATION_ID = 'T2jYdY6yKrpGB5DjiWqp';
 const BACKEND = 'https://dominion-demo-backend.onrender.com';
 let sessionStats = {found:0, noweb:0, added:0, owned:0};
 let conversationHistory = [];
@@ -525,12 +523,28 @@ async function addToGHL(idx, btn) {
     if (biz.isLatinoOwned) tags.push('latino-owned');
     if (biz.isWomanOwned) tags.push('woman-owned');
     if (biz.isVeteranOwned) tags.push('veteran-owned');
-    await fetch(`https://rest.gohighlevel.com/v1/contacts/`, {
+    // Routed through the backend so the GHL key stays server-side.
+    var cityParts = (biz.city || '').split(',');
+    var r = await fetch(BACKEND + '/push-to-ghl', {
       method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':`Bearer ${GHL_API_KEY}`},
-      body: JSON.stringify({name:biz.name, phone:biz.phone||'', address1:biz.address||'', locationId:GHL_LOCATION_ID, tags})
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        businessName: biz.name,
+        phone: biz.phone || '',
+        email: biz.email || '',
+        address: biz.address || '',
+        city: (cityParts[0] || '').trim(),
+        state: (cityParts[1] || '').trim(),
+        demoUrl: (window._bulkUrls && window._bulkUrls[idx]) || biz.demoUrl || '',
+        tags: tags
+      })
     });
-  } catch(e) {}
+    if (!r.ok) throw new Error('push failed ' + r.status);
+  } catch(e) {
+    btn.textContent = '✗ Failed';
+    btn.disabled = false;
+    return;
+  }
   btn.textContent = '✓ Added';
   btn.classList.add('added');
   sessionStats.added++;
