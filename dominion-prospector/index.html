@@ -598,12 +598,27 @@ async function sendMessage() {
   var searchMatch =
       text.match(/(?:find|search(?:\s+for)?|look\s+(?:for|up)|get|show\s+me|list|pull\s+up)\s+(?:me\s+)?(?:some\s+|all\s+|a\s+few\s+)?(.+?)\s+(?:in|near|around|close\s+to|by)\s+(.+?)(?:\s+with\b|\s+that\b|\s+who\b|\s+and\b|[.?!]|$)/i)
    || text.match(/^\s*(.+?)\s+(?:in|near|around)\s+(.+?)(?:\s+with\b|\s+that\b|\s+who\b|[.?!]|$)/i);
+  // Always attempt the Google search. The old code only searched when the
+  // wording matched a pattern, so any other phrasing silently produced a
+  // prose answer with no result cards and no buttons.
+  var q = '', loc = '';
   if (searchMatch) {
+    q = searchMatch[1].trim(); loc = searchMatch[2].trim();
+  } else {
+    // no pattern: split on the last "in/near/around", else send the lot as the query
+    var m2 = text.match(/^(.*)\s+(?:in|near|around|close\s+to)\s+([^.?!]+)[.?!]?\s*$/i);
+    if (m2) { q = m2[1].trim(); loc = m2[2].trim(); }
+    else    { q = text.trim(); loc = ''; }
+    q = q.replace(/^(?:can you|could you|please|hey|hi)\s+/i,'')
+         .replace(/^(?:find|search(?:\s+for)?|look\s+(?:for|up)|get|show\s+me|list|pull\s+up)\s+/i,'')
+         .replace(/^(?:me\s+)?(?:some\s+|all\s+|a\s+few\s+)?/i,'').trim();
+  }
+  if (q) {
     try {
       const searchRes = await fetch(BACKEND + '/search-businesses', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ query: searchMatch[1].trim(), location: searchMatch[2].trim() })
+        body: JSON.stringify({ query: q, location: loc })
       });
       if (searchRes.ok) {
         const sd = await searchRes.json();
