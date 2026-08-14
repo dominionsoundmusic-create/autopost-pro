@@ -614,17 +614,26 @@ async function sendMessage() {
          .replace(/^(?:me\s+)?(?:some\s+|all\s+|a\s+few\s+)?/i,'').trim();
   }
   if (q) {
-    try {
-      const searchRes = await fetch(BACKEND + '/search-businesses', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ query: q, location: loc })
-      });
-      if (searchRes.ok) {
-        const sd = await searchRes.json();
-        if (sd.businesses && sd.businesses.length > 0) realBusinesses = sd.businesses;
+    // Render spins the backend down when idle. The first request after that
+    // only wakes it, so try again rather than falling back to a prose answer.
+    for (var attempt = 0; attempt < 3 && !realBusinesses; attempt++) {
+      if (attempt > 0) {
+        var note = document.getElementById('wakeNote');
+        if (note) note.textContent = 'Waking the server\u2026 (attempt ' + (attempt+1) + ' of 3)';
+        await new Promise(function(r){ setTimeout(r, attempt === 1 ? 4000 : 9000); });
       }
-    } catch(e) {}
+      try {
+        const searchRes = await fetch(BACKEND + '/search-businesses', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ query: q, location: loc })
+        });
+        if (searchRes.ok) {
+          const sd = await searchRes.json();
+          if (sd.businesses && sd.businesses.length > 0) realBusinesses = sd.businesses;
+        }
+      } catch(e) {}
+    }
   }
 
   const realDataSection = realBusinesses
@@ -1532,4 +1541,25 @@ loadDemoLibrary();
 
 
 
+
+<script>
+/* Wake the Render backend on load. It sleeps when idle and the first request
+   only wakes it, which used to produce a prose answer with no result cards. */
+(function(){
+  var b = (typeof BACKEND !== 'undefined') ? BACKEND : 'https://dominion-demo-backend.onrender.com';
+  var warm = false, t0 = Date.now();
+  function ping(){
+    fetch(b + '/health', {method:'GET'})
+      .then(function(r){ if(r.ok){ warm = true; flag('ready'); } else retry(); })
+      .catch(retry);
+  }
+  function retry(){ if (Date.now()-t0 < 75000) setTimeout(ping, 5000); else flag('cold'); }
+  function flag(state){
+    var el = document.getElementById('wakeNote');
+    if (!el) return;
+    el.textContent = state === 'ready' ? '' : 'Server still waking — your first search may take a moment.';
+  }
+  ping();
+})();
+</script>
 </body></html>
