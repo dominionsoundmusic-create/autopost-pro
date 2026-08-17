@@ -584,7 +584,149 @@ async function listPublishedSlugs(brand) {
   }
 }
 
+// Same listing as listPublishedSlugs but returns the real file names, which is
+// what the index and the sitemap need.
+async function listBlogFileNames(brand) {
+  try {
+    const res = await axios.get(
+      `https://api.github.com/repos/${brand.repo_owner}/${brand.repo_name}/contents/${brand.blog_path}`,
+      { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+    );
+    return res.data.filter(f => f.name.endsWith('.html')).map(f => f.name);
+  } catch (e) {
+    return [];
+  }
+}
+
 // Generate and publish one blog post for a brand
+// ---------------------------------------------------------------------------
+// Orphan fix. The generator used to commit ONLY the post file: no blog index
+// entry, no sitemap entry, nothing linking to it. Every post on every brand was
+// unreachable except by luck, if a city-builder run happened to sweep it up.
+// These helpers commit the post, a rebuilt index and an updated sitemap as ONE
+// commit via the git tree API — three separate contents-API calls would cost
+// three Netlify deploys per brand per run instead of one.
+// ---------------------------------------------------------------------------
+
+const TITLE_ACRONYMS = new Set(['ai','seo','hvac','crm','sms','faq','roi','cta','ppc','api','dfw','usa','llc']);
+const TITLE_LOWER = new Set(['a','an','and','as','at','but','by','for','from','in','of','on','or','the','to','vs','with']);
+
+function titleFromSlug(fileName) {
+  const words = fileName
+    .replace(/\.html$/, '')
+    .replace(/-\d{10,}$/, '')        // strip the millisecond stamp
+    .split('-')
+    .filter(Boolean);
+  return words.map((w, i) => {
+    const lw = w.toLowerCase();
+    if (TITLE_ACRONYMS.has(lw)) return lw.toUpperCase();
+    if (i > 0 && TITLE_LOWER.has(lw)) return lw;      // never lowercase the first word
+    return lw.charAt(0).toUpperCase() + lw.slice(1);
+  }).join(' ');
+}
+
+function buildBlogIndex(brand, fileNames) {
+  const base = `https://${brand.domain}`;
+  const dir = brand.blog_path;
+  const color = brand.color || '#4f7cff';
+  const posts = fileNames
+    .filter(n => n !== 'index.html')
+    .map(n => ({ n, stamp: Number((n.match(/-(\d{10,})\.html$/) || [])[1] || 0) }))
+    .sort((a, b) => b.stamp - a.stamp);
+
+  let h = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">';
+  h += '<meta name="viewport" content="width=device-width,initial-scale=1">';
+  h += `<title>Blog | ${brand.name}</title>`;
+  h += `<meta name="description" content="Guides and updates from ${brand.name}.">`;
+  h += `<link rel="canonical" href="${base}/${dir}/">`;
+  h += '<style>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;'
+    + 'margin:0;background:#0b0d13;color:#e7e7f0;line-height:1.65}a{color:inherit}'
+    + 'header{background:#12151f;border-bottom:1px solid #232838;padding:14px 22px}'
+    + 'header a{font-weight:800;text-decoration:none;color:#fff}'
+    + '.wrap{padding:clamp(22px,5.5vw,140px);padding-top:52px;padding-bottom:60px}'
+    + 'h1{font-size:2.05em;margin:0 0 10px;color:#fff}'
+    + '.lede{color:#9a9ab4;max-width:70ch;margin:0 0 34px}'
+    + '.post{border-top:1px solid #232838;padding:18px 0}'
+    + `.post a{font-size:1.08em;font-weight:700;color:#fff;text-decoration:none}`
+    + `.post a:hover{color:${color}}`
+    + 'footer{background:#12151f;color:#8a8aa2;padding:26px 22px;text-align:center;font-size:.8em}'
+    + '</style></head><body>';
+  h += `<header><a href="${base}/">${brand.name}</a></header>`;
+  h += `<div class="wrap"><h1>Blog</h1><p class="lede">Practical guides from ${brand.name}.</p>`;
+  for (const p of posts) {
+    h += `<div class="post"><a href="${base}/${dir}/${p.n}">${titleFromSlug(p.n)}</a></div>`;
+  }
+  h += `</div><footer>&copy; ${new Date().getFullYear()} ${brand.name} &middot; <a href="${base}/">Home</a></footer>`;
+  h += '</body></html>';
+  return h;
+}
+
+// Adds any missing blog URLs to the existing sitemap without disturbing the
+// city-page URLs the city builder maintains.
+function mergeSitemap(existingXml, brand, fileNames) {
+  const base = `https://${brand.domain}`;
+  const dir = brand.blog_path;
+  const today = new Date().toISOString().slice(0, 10);
+  const wanted = [`${base}/${dir}/`].concat(
+    fileNames.filter(n => n !== 'index.html').map(n => `${base}/${dir}/${n}`)
+  );
+  let locs = [];
+  if (existingXml) {
+    locs = (existingXml.match(/<loc>([^<]+)<\/loc>/g) || [])
+      .map(m => m.replace(/<\/?loc>/g, ''));
+  }
+  const have = new Set(locs);
+  const added = wanted.filter(u => !have.has(u));
+  if (!added.length && existingXml) return null;   // nothing to do
+  const all = locs.concat(added);
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  for (const u of all) {
+    xml += `  <url><loc>${u}</loc><lastmod>${today}</lastmod></url>\n`;
+  }
+  xml += '</urlset>\n';
+  return xml;
+}
+
+async function getFile(owner, repo, path) {
+  try {
+    const r = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+      { headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+    );
+    return Buffer.from(r.data.content, 'base64').toString('utf8');
+  } catch (e) { return null; }
+}
+
+// One commit, many files. Costs one Netlify deploy instead of one per file.
+async function commitFilesToGitHub(owner, repo, files, message) {
+  const H = { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' };
+  try {
+    const ref = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, { headers: H });
+    const headSha = ref.data.object.sha;
+    const commit = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/commits/${headSha}`, { headers: H });
+    const baseTree = commit.data.tree.sha;
+
+    const tree = [];
+    for (const f of files) {
+      const blob = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/blobs`,
+        { content: Buffer.from(f.content).toString('base64'), encoding: 'base64' }, { headers: H });
+      tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.data.sha });
+    }
+    const newTree = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/trees`,
+      { base_tree: baseTree, tree }, { headers: H });
+    const newCommit = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/commits`,
+      { message, tree: newTree.data.sha, parents: [headSha] }, { headers: H });
+    await axios.patch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/main`,
+      { sha: newCommit.data.sha }, { headers: H });
+    return true;
+  } catch (err) {
+    console.error('GitHub tree commit error:', err.response?.data || err.message);
+    return false;
+  }
+}
+
+
 async function publishBlogPost(brand) {
   console.log(`\n📝 Generating blog post for ${brand.name}...`);
 
@@ -615,14 +757,27 @@ async function publishBlogPost(brand) {
   // Wrap in full HTML page
   const html = wrapBlogPost(brand, topic, content, slug);
 
-  // Commit to GitHub
+  // Commit the post, a rebuilt blog index and an updated sitemap as ONE commit.
+  // Committing only the post is what orphaned every article on every brand.
   const path = `${brand.blog_path}/${slug}.html`;
-  const committed = await commitToGitHub(
+
+  const existingNames = await listBlogFileNames(brand);
+  const allNames = Array.from(new Set(existingNames.concat([`${slug}.html`])));
+
+  const files = [
+    { path, content: html },
+    { path: `${brand.blog_path}/index.html`, content: buildBlogIndex(brand, allNames) }
+  ];
+
+  const currentSitemap = await getFile(brand.repo_owner, brand.repo_name, 'sitemap.xml');
+  const mergedSitemap = mergeSitemap(currentSitemap, brand, allNames);
+  if (mergedSitemap) files.push({ path: 'sitemap.xml', content: mergedSitemap });
+
+  const committed = await commitFilesToGitHub(
     brand.repo_owner,
     brand.repo_name,
-    path,
-    html,
-    `Add blog post: ${resolvedTopic}`
+    files,
+    `Add blog post: ${resolvedTopic} (+ blog index, sitemap)`
   );
 
   if (committed) {
