@@ -288,13 +288,13 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   "badge2": "short trust badge like 'Same-Day Service' or '5-Star Rated'",
   "badge3": "short trust badge like 'Free Estimates' or '100% Satisfaction'",
   "service1": "specific service name",
-  "service1desc": "2 compelling sentences about this service with a benefit",
+  "service1desc": "2 sentences about this service with a benefit. Make the FIRST sentence a complete thought under 15 words - it is shown alone on the hero card",
   "service1icon": "single relevant emoji",
   "service2": "specific service name",
-  "service2desc": "2 compelling sentences about this service with a benefit",
+  "service2desc": "2 sentences about this service with a benefit. Make the FIRST sentence a complete thought under 15 words - it is shown alone on the hero card",
   "service2icon": "single relevant emoji",
   "service3": "specific service name",
-  "service3desc": "2 compelling sentences about this service with a benefit",
+  "service3desc": "2 sentences about this service with a benefit. Make the FIRST sentence a complete thought under 15 words - it is shown alone on the hero card",
   "service3icon": "single relevant emoji",
   "stat1num": "impressive stat number like '500+' or '15'",
   "stat1label": "what that stat means like 'Happy Customers' or 'Years Experience'",
@@ -357,9 +357,15 @@ Return ONLY a valid JSON object, no markdown, no explanation:
 // when nothing was removed, so every card looked unfinished.
 function clampWords(text, maxWords) {
   const t = String(text || '').trim();
+  if (!t) return '';
+  // The copy spec asks for two sentences: the card wants one, the services
+  // section below shows the full text. Cut on the first sentence end when it
+  // lands in a sensible range so the card reads as finished, not truncated.
+  const m = t.match(/^(.{25,150}?[.!?])(\s|$)/);
+  if (m) return m[1];
   const words = t.split(/\s+/);
   if (words.length <= maxWords) return t;
-  return words.slice(0, maxWords).join(' ').replace(/[,;:.\-]+$/, '') + '…';
+  return words.slice(0, maxWords).join(' ').replace(/[,;:.\-]+$/, '') + '\u2026';
 }
 
 function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceImg, refCode) {
@@ -443,10 +449,12 @@ nav{
   position:relative;z-index:2;
   max-width:1200px;margin:0 auto;width:100%;
   padding:80px 48px;
-  display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:clamp(48px,6vw,96px);align-items:center;
 }
 @media(max-width:900px){.hero-grid{grid-template-columns:1fr;padding:60px 24px;gap:32px}}
-.hero-left{}
+.hero-left{min-width:0}
+.hero-left h1{max-width:15ch;overflow-wrap:break-word}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--accent);font-size:.72rem;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase}
 .hero h1{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;color:var(--white);line-height:1.08;margin-bottom:18px;letter-spacing:-0.02em;text-shadow:0 2px 12px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.8)}
 .hero h1 em{font-style:normal;color:var(--accent)}
