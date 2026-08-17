@@ -83,36 +83,47 @@ const PHOTO_COUNTS = {
 };
 
 // maps the industryHeroes keys onto photo folders
-const PHOTO_FOLDER = {
-  plumber: 'plumbing', plumbing: 'plumbing',
-  dentist: 'dental', dental: 'dental',
-  roof: 'roofing',
-  hvac: 'hvac', heating: 'hvac', cooling: 'hvac',
-  lawyer: 'legal', attorney: 'legal', legal: 'legal',
-  chiro: 'chiropractic',
-  auto: 'auto-repair', car: 'auto-repair',
-  realtor: 'real-estate',
-  restaurant: 'restaurant', food: 'restaurant',
-  contractor: 'construction', construction: 'construction',
-  landscape: 'landscaping', lawn: 'landscaping',
-  electric: 'electrical',
-  insurance: 'insurance',
-  gym: 'gym', fitness: 'gym',
-  salon: 'salon', hair: 'salon',
-  vet: 'veterinary', animal: 'veterinary',
-  account: 'accounting', tax: 'accounting',
-  photo: 'photography',
-  clean: 'cleaning', maid: 'cleaning',
-  pest: 'pest-control',
-  default: 'default'
-};
+// Ordered longest-to-shortest is WRONG: 'contractor' (10 chars) beat 'hvac' (4),
+// so "HVAC contractor" and "Roofing contractor" both landed in construction.
+// This is an ORDERED list — specific trades first, generic catch-alls last.
+const PHOTO_FOLDER_RULES = [
+  ['chiropract', 'chiropractic'],
+  ['hvac', 'hvac'], ['heating', 'hvac'], ['cooling', 'hvac'],
+  ['air conditioning', 'hvac'], ['furnace', 'hvac'],
+  ['roof', 'roofing'],
+  ['plumb', 'plumbing'],
+  ['electric', 'electrical'],
+  ['dentist', 'dental'], ['dental', 'dental'], ['orthodont', 'dental'],
+  ['attorney', 'legal'], ['lawyer', 'legal'], ['legal', 'legal'], ['law firm', 'legal'],
+  ['veterinar', 'veterinary'], ['animal hospital', 'veterinary'], ['vet clinic', 'veterinary'],
+  ['pest', 'pest-control'], ['exterminat', 'pest-control'], ['termite', 'pest-control'],
+  ['nail', 'salon'], ['hair', 'salon'], ['barber', 'salon'], ['salon', 'salon'], ['spa', 'salon'],
+  ['landscap', 'landscaping'], ['lawn', 'landscaping'], ['tree service', 'landscaping'],
+  ['tree ', 'landscaping'], ['arborist', 'landscaping'],
+  ['auto repair', 'auto-repair'], ['auto body', 'auto-repair'], ['mechanic', 'auto-repair'],
+  ['collision', 'auto-repair'], ['tire', 'auto-repair'],
+  ['real estate', 'real-estate'], ['realtor', 'real-estate'], ['realty', 'real-estate'],
+  ['restaurant', 'restaurant'], ['cafe', 'restaurant'], ['diner', 'restaurant'],
+  ['pizzeria', 'restaurant'], ['bakery', 'restaurant'], ['catering', 'restaurant'],
+  ['gym', 'gym'], ['fitness', 'gym'], ['crossfit', 'gym'], ['pilates', 'gym'], ['yoga', 'gym'],
+  ['insurance', 'insurance'],
+  ['accounting', 'accounting'], ['accountant', 'accounting'], ['bookkeep', 'accounting'],
+  ['tax', 'accounting'], ['cpa', 'accounting'],
+  ['photograph', 'photography'],
+  ['maid', 'cleaning'], ['janitorial', 'cleaning'], ['housekeep', 'cleaning'],
+  ['clean', 'cleaning'],
+  // generic catch-alls LAST so a named trade always wins
+  ['general contractor', 'construction'], ['remodel', 'construction'],
+  ['construction', 'construction'], ['builder', 'construction'], ['contractor', 'construction']
+];
 
 function getPhotoFolder(businessName, businessType) {
-  const text = (businessName + ' ' + businessType).toLowerCase();
-  // Sort by key length descending so specific keys match before short ones (e.g. 'veterinarian' before 'vet', 'auto' won't steal matches)
-  const keys = Object.keys(PHOTO_FOLDER).filter(k => k !== 'default').sort((a, b) => b.length - a.length);
-  for (const key of keys) {
-    if (text.includes(key)) return PHOTO_FOLDER[key];
+  // businessType is the deliberate signal; check it before the free-text name
+  for (const source of [String(businessType || ''), String(businessName || '')]) {
+    const text = source.toLowerCase();
+    for (const [key, folder] of PHOTO_FOLDER_RULES) {
+      if (text.includes(key)) return folder;
+    }
   }
   return 'default';
 }
@@ -134,12 +145,20 @@ function pickLocalPhotos(folder, howMany) {
 }
 
 function getHero(businessName, businessType) {
-  const text = (businessName + ' ' + businessType).toLowerCase();
-  // Sort by key length descending so specific matches win
-  const entries = Object.entries(industryHeroes).filter(([k]) => k !== 'default').sort((a, b) => b[0].length - a[0].length);
-  for (const [key, val] of entries) {
-    if (text.includes(key)) return val;
-  }
+  // Was: sort keys by length descending. That is not specificity — 'construction'
+  // (12) and 'contractor' (10) beat 'hvac' (4), so "HVAC contractor" got the
+  // hammer icon, the grey construction palette and a construction Unsplash query.
+  // Derive from the same ordered rules so the two can never drift apart.
+  const folderToHero = {
+    'hvac': 'hvac', 'roofing': 'roof', 'plumbing': 'plumber', 'electrical': 'electric',
+    'dental': 'dentist', 'legal': 'attorney', 'veterinary': 'vet', 'pest-control': 'pest',
+    'salon': 'salon', 'landscaping': 'landscape', 'auto-repair': 'auto',
+    'real-estate': 'real estate', 'restaurant': 'restaurant', 'gym': 'gym',
+    'insurance': 'insurance', 'accounting': 'account', 'photography': 'photo',
+    'cleaning': 'clean', 'chiropractic': 'chiro', 'construction': 'contractor'
+  };
+  const key = folderToHero[getPhotoFolder(businessName, businessType)];
+  if (key && industryHeroes[key]) return industryHeroes[key];
   return industryHeroes.default;
 }
 
@@ -332,6 +351,17 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   }
 });
 
+
+// Trims to a whole-word boundary. The old code did substring(0,80)+'...' which
+// cut mid-word ("wait on until Mond...") and always showed an ellipsis even
+// when nothing was removed, so every card looked unfinished.
+function clampWords(text, maxWords) {
+  const t = String(text || '').trim();
+  const words = t.split(/\s+/);
+  if (words.length <= maxWords) return t;
+  return words.slice(0, maxWords).join(' ').replace(/[,;:.\-]+$/, '') + '…';
+}
+
 function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceImg, refCode) {
   const loc = `${city}${state ? ', ' + state : ''}`;
   const phone = '(903) 636-7511';
@@ -430,10 +460,10 @@ nav{
 .btn-secondary{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);color:var(--white);padding:14px 28px;border-radius:12px;font-weight:700;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 .hero-right{display:flex;flex-direction:column;gap:12px}
 @media(max-width:900px){.hero-right{display:none}}
-.hero-card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:20px 22px;backdrop-filter:blur(10px)}
+.hero-card{background:rgba(8,10,16,0.72);border:1px solid rgba(255,255,255,0.14);border-radius:var(--radius);padding:20px 22px;backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,0.35)}
 .hero-card-icon{font-size:1.5rem;margin-bottom:8px}
 .hero-card h3{font-size:.88rem;font-weight:700;color:var(--white);margin-bottom:4px}
-.hero-card p{font-size:.78rem;color:rgba(255,255,255,0.55);line-height:1.6}
+.hero-card p{font-size:.79rem;color:rgba(255,255,255,0.82);line-height:1.55}
 
 /* STATS */
 .stats-strip{background:var(--off);border-bottom:1px solid #E2E8F0;padding:32px 48px}
@@ -576,17 +606,17 @@ footer{
       <div class="hero-card">
         <div class="hero-card-icon">${d.service1icon || hero.emoji}</div>
         <h3>${d.service1}</h3>
-        <p>${d.service1desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service1desc, 14)}</p>
       </div>
       <div class="hero-card">
         <div class="hero-card-icon">${d.service2icon || '⭐'}</div>
         <h3>${d.service2}</h3>
-        <p>${d.service2desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service2desc, 14)}</p>
       </div>
       <div class="hero-card">
         <div class="hero-card-icon">${d.service3icon || '✅'}</div>
         <h3>${d.service3}</h3>
-        <p>${d.service3desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service3desc, 14)}</p>
       </div>
     </div>
   </div>
