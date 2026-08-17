@@ -83,36 +83,47 @@ const PHOTO_COUNTS = {
 };
 
 // maps the industryHeroes keys onto photo folders
-const PHOTO_FOLDER = {
-  plumber: 'plumbing', plumbing: 'plumbing',
-  dentist: 'dental', dental: 'dental',
-  roof: 'roofing',
-  hvac: 'hvac', heating: 'hvac', cooling: 'hvac',
-  lawyer: 'legal', attorney: 'legal', legal: 'legal',
-  chiro: 'chiropractic',
-  auto: 'auto-repair', car: 'auto-repair',
-  realtor: 'real-estate',
-  restaurant: 'restaurant', food: 'restaurant',
-  contractor: 'construction', construction: 'construction',
-  landscape: 'landscaping', lawn: 'landscaping',
-  electric: 'electrical',
-  insurance: 'insurance',
-  gym: 'gym', fitness: 'gym',
-  salon: 'salon', hair: 'salon',
-  vet: 'veterinary', animal: 'veterinary',
-  account: 'accounting', tax: 'accounting',
-  photo: 'photography',
-  clean: 'cleaning', maid: 'cleaning',
-  pest: 'pest-control',
-  default: 'default'
-};
+// Ordered longest-to-shortest is WRONG: 'contractor' (10 chars) beat 'hvac' (4),
+// so "HVAC contractor" and "Roofing contractor" both landed in construction.
+// This is an ORDERED list — specific trades first, generic catch-alls last.
+const PHOTO_FOLDER_RULES = [
+  ['chiropract', 'chiropractic'],
+  ['hvac', 'hvac'], ['heating', 'hvac'], ['cooling', 'hvac'],
+  ['air conditioning', 'hvac'], ['furnace', 'hvac'],
+  ['roof', 'roofing'],
+  ['plumb', 'plumbing'],
+  ['electric', 'electrical'],
+  ['dentist', 'dental'], ['dental', 'dental'], ['orthodont', 'dental'],
+  ['attorney', 'legal'], ['lawyer', 'legal'], ['legal', 'legal'], ['law firm', 'legal'],
+  ['veterinar', 'veterinary'], ['animal hospital', 'veterinary'], ['vet clinic', 'veterinary'],
+  ['pest', 'pest-control'], ['exterminat', 'pest-control'], ['termite', 'pest-control'],
+  ['nail', 'salon'], ['hair', 'salon'], ['barber', 'salon'], ['salon', 'salon'], ['spa', 'salon'],
+  ['landscap', 'landscaping'], ['lawn', 'landscaping'], ['tree service', 'landscaping'],
+  ['tree ', 'landscaping'], ['arborist', 'landscaping'],
+  ['auto repair', 'auto-repair'], ['auto body', 'auto-repair'], ['mechanic', 'auto-repair'],
+  ['collision', 'auto-repair'], ['tire', 'auto-repair'],
+  ['real estate', 'real-estate'], ['realtor', 'real-estate'], ['realty', 'real-estate'],
+  ['restaurant', 'restaurant'], ['cafe', 'restaurant'], ['diner', 'restaurant'],
+  ['pizzeria', 'restaurant'], ['bakery', 'restaurant'], ['catering', 'restaurant'],
+  ['gym', 'gym'], ['fitness', 'gym'], ['crossfit', 'gym'], ['pilates', 'gym'], ['yoga', 'gym'],
+  ['insurance', 'insurance'],
+  ['accounting', 'accounting'], ['accountant', 'accounting'], ['bookkeep', 'accounting'],
+  ['tax', 'accounting'], ['cpa', 'accounting'],
+  ['photograph', 'photography'],
+  ['maid', 'cleaning'], ['janitorial', 'cleaning'], ['housekeep', 'cleaning'],
+  ['clean', 'cleaning'],
+  // generic catch-alls LAST so a named trade always wins
+  ['general contractor', 'construction'], ['remodel', 'construction'],
+  ['construction', 'construction'], ['builder', 'construction'], ['contractor', 'construction']
+];
 
 function getPhotoFolder(businessName, businessType) {
-  const text = (businessName + ' ' + businessType).toLowerCase();
-  // Sort by key length descending so specific keys match before short ones (e.g. 'veterinarian' before 'vet', 'auto' won't steal matches)
-  const keys = Object.keys(PHOTO_FOLDER).filter(k => k !== 'default').sort((a, b) => b.length - a.length);
-  for (const key of keys) {
-    if (text.includes(key)) return PHOTO_FOLDER[key];
+  // businessType is the deliberate signal; check it before the free-text name
+  for (const source of [String(businessType || ''), String(businessName || '')]) {
+    const text = source.toLowerCase();
+    for (const [key, folder] of PHOTO_FOLDER_RULES) {
+      if (text.includes(key)) return folder;
+    }
   }
   return 'default';
 }
