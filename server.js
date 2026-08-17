@@ -315,6 +315,17 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   }
 });
 
+
+// Trims to a whole-word boundary. The old code did substring(0,80)+'...' which
+// cut mid-word ("wait on until Mond...") and always showed an ellipsis even
+// when nothing was removed, so every card looked unfinished.
+function clampWords(text, maxWords) {
+  const t = String(text || '').trim();
+  const words = t.split(/\s+/);
+  if (words.length <= maxWords) return t;
+  return words.slice(0, maxWords).join(' ').replace(/[,;:.\-]+$/, '') + '…';
+}
+
 function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceImg, refCode) {
   const loc = `${city}${state ? ', ' + state : ''}`;
   const phone = '(903) 636-7511';
@@ -413,10 +424,10 @@ nav{
 .btn-secondary{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);color:var(--white);padding:14px 28px;border-radius:12px;font-weight:700;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 .hero-right{display:flex;flex-direction:column;gap:12px}
 @media(max-width:900px){.hero-right{display:none}}
-.hero-card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:20px 22px;backdrop-filter:blur(10px)}
+.hero-card{background:rgba(8,10,16,0.72);border:1px solid rgba(255,255,255,0.14);border-radius:var(--radius);padding:20px 22px;backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,0.35)}
 .hero-card-icon{font-size:1.5rem;margin-bottom:8px}
 .hero-card h3{font-size:.88rem;font-weight:700;color:var(--white);margin-bottom:4px}
-.hero-card p{font-size:.78rem;color:rgba(255,255,255,0.55);line-height:1.6}
+.hero-card p{font-size:.79rem;color:rgba(255,255,255,0.82);line-height:1.55}
 
 /* STATS */
 .stats-strip{background:var(--off);border-bottom:1px solid #E2E8F0;padding:32px 48px}
@@ -559,17 +570,17 @@ footer{
       <div class="hero-card">
         <div class="hero-card-icon">${d.service1icon || hero.emoji}</div>
         <h3>${d.service1}</h3>
-        <p>${d.service1desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service1desc, 14)}</p>
       </div>
       <div class="hero-card">
         <div class="hero-card-icon">${d.service2icon || '⭐'}</div>
         <h3>${d.service2}</h3>
-        <p>${d.service2desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service2desc, 14)}</p>
       </div>
       <div class="hero-card">
         <div class="hero-card-icon">${d.service3icon || '✅'}</div>
         <h3>${d.service3}</h3>
-        <p>${d.service3desc.substring(0,80)}...</p>
+        <p>${clampWords(d.service3desc, 14)}</p>
       </div>
     </div>
   </div>
