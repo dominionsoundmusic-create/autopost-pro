@@ -1204,6 +1204,12 @@ app.post('/deploy-to-netlify', async (req, res) => {
 //    deploy per image.
 // ---------------------------------------------------------------------------
 
+const BAD_TITLE = new RegExp([
+  'map', 'sanborn', 'plaque', 'marker', 'postcard', 'seal', 'flag', 'logo',
+  'diagram', 'plan of', 'survey', 'habs', 'haer', 'blueprint', 'drawing',
+  'coat of arms', 'interior', 'detail of', 'sign', 'plat', 'atlas', 'engraving'
+].join('|'), 'i');
+
 const FREE_LICENCES = [
   'cc0', 'cc-zero', 'public domain', 'pd-', 'cc-by', 'cc by',
   'cc-by-sa', 'cc by-sa', 'attribution'
@@ -1251,17 +1257,24 @@ function stripTags(v) {
 }
 
 // Search Commons for one city and return the first FREE image with metadata.
-async function findCityImage(city, state, county) {
+async function findCityImage(city, state, county, forceTerm) {
+  // Order matters and the first version had it BACKWARDS. Leading with the
+  // county courthouse gave Anaheim the Orange County courthouse — which stands
+  // in Santa Ana, twelve miles away. Ask for the city itself first; the
+  // courthouse is a decent fallback only when nothing city-specific exists.
   const tries = [
-    county ? `${county} Courthouse ${state}` : null,
+    forceTerm || null,
     `${city} ${state} downtown`,
+    `${city}, ${state} skyline`,
+    `${city}, ${state} main street`,
+    county ? `${county} Courthouse ${state}` : null,
     `${city}, ${state}`
   ].filter(Boolean);
 
   for (const term of tries) {
     const searchUrl = 'https://commons.wikimedia.org/w/api.php?action=query&format=json'
       + '&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=' + encodeURIComponent(term)
-      + '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=1200';
+      + '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=1000';
     let data;
     try { data = await httpsJson(searchUrl); } catch (e) { continue; }
     const pages = ((data || {}).query || {}).pages || {};
@@ -1272,6 +1285,11 @@ async function findCityImage(city, state, county) {
       if (!licenceIsFree(meta)) continue;
       if ((info.width || 0) < 800) continue;              // too small to use
       if (!/\.(jpg|jpeg|png)$/i.test(pages[k].title)) continue;
+      // Commons is full of things that are technically "images of a city" and
+      // useless as one. The first run returned a Sanborn insurance MAP for
+      // Baton Rouge, a bronze PLAQUE for Savannah and a black-and-white
+      // architectural survey shot of an interior column for Mobile.
+      if (BAD_TITLE.test(pages[k].title)) continue;
       return {
         term,
         title: pages[k].title,
@@ -1341,7 +1359,7 @@ app.post('/fetch-city-images', async (req, res) => {
     const found = [], missed = [], files = [], credits = {};
     for (const c of cities) {
       let hit = null;
-      try { hit = await findCityImage(c.city, c.state, c.county); } catch (e) { hit = null; }
+      try { hit = await findCityImage(c.city, c.state, c.county, c.term); } catch (e) { hit = null; }
       if (!hit) { missed.push(c.slug); continue; }
       let buf = null;
       if (!dryRun) {
