@@ -1182,6 +1182,195 @@ app.post('/deploy-to-netlify', async (req, res) => {
   }
 });
 
+
+// ---------------------------------------------------------------------------
+// CITY IMAGES FROM WIKIMEDIA COMMONS
+//
+// Why this lives here: Claude's sandbox cannot reach wikimedia.org (403 from its
+// own egress proxy), but this Render service has open network. So the fetching
+// happens here and the results are committed straight into the site repo.
+//
+// Design notes:
+//  * Uses node's built-in https, NOT axios — this service has no axios and
+//    adding a dependency risks the build for a one-off job.
+//  * Asks Commons for a THUMBNAIL at a fixed width (iiurlwidth), so Wikimedia
+//    does the resizing. No sharp/jimp needed.
+//  * Reads the licence field and SKIPS anything that is not clearly free.
+//    Commons hosts fair-use and restricted files too; publishing one would be
+//    a real problem, not a cosmetic one.
+//  * Records the author and licence for every image so the page can carry the
+//    attribution that free licences require.
+//  * Commits every image in ONE git tree commit = one Netlify deploy, not one
+//    deploy per image.
+// ---------------------------------------------------------------------------
+
+const FREE_LICENCES = [
+  'cc0', 'cc-zero', 'public domain', 'pd-', 'cc-by', 'cc by',
+  'cc-by-sa', 'cc by-sa', 'attribution'
+];
+
+function httpsJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'DominionCityImages/1.0 (maurice@dominionwebdesignpro.com)' } }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(body)); } catch (e) { reject(new Error('bad json from ' + url)); }
+      });
+    }).on('error', reject);
+  });
+}
+
+function httpsBuffer(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'DominionCityImages/1.0 (maurice@dominionwebdesignpro.com)' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return httpsBuffer(res.headers.location).then(resolve).catch(reject);
+      }
+      if (res.statusCode !== 200) return reject(new Error('status ' + res.statusCode));
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', reject);
+  });
+}
+
+function licenceIsFree(meta) {
+  const bits = [
+    (meta.LicenseShortName || {}).value,
+    (meta.License || {}).value,
+    (meta.UsageTerms || {}).value
+  ].filter(Boolean).join(' ').toLowerCase();
+  if (!bits) return false;
+  if (bits.includes('fair use') || bits.includes('non-free') || bits.includes('nonfree')) return false;
+  return FREE_LICENCES.some(l => bits.includes(l));
+}
+
+function stripTags(v) {
+  return String(v || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Search Commons for one city and return the first FREE image with metadata.
+async function findCityImage(city, state, county) {
+  const tries = [
+    county ? `${county} Courthouse ${state}` : null,
+    `${city} ${state} downtown`,
+    `${city}, ${state}`
+  ].filter(Boolean);
+
+  for (const term of tries) {
+    const searchUrl = 'https://commons.wikimedia.org/w/api.php?action=query&format=json'
+      + '&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=' + encodeURIComponent(term)
+      + '&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=1200';
+    let data;
+    try { data = await httpsJson(searchUrl); } catch (e) { continue; }
+    const pages = ((data || {}).query || {}).pages || {};
+    for (const k of Object.keys(pages)) {
+      const info = (pages[k].imageinfo || [])[0];
+      if (!info) continue;
+      const meta = info.extmetadata || {};
+      if (!licenceIsFree(meta)) continue;
+      if ((info.width || 0) < 800) continue;              // too small to use
+      if (!/\.(jpg|jpeg|png)$/i.test(pages[k].title)) continue;
+      return {
+        term,
+        title: pages[k].title,
+        thumb: info.thumburl || info.url,
+        descriptionurl: info.descriptionurl,
+        author: stripTags((meta.Artist || {}).value) || 'Unknown',
+        licence: stripTags((meta.LicenseShortName || {}).value) || 'see source',
+        width: info.thumbwidth || info.width
+      };
+    }
+  }
+  return null;
+}
+
+// One commit, many files — same tree-API approach the blog generator uses.
+async function commitImages(token, owner, repo, files, message) {
+  const api = (path, method, body) => new Promise((resolve, reject) => {
+    const payload = body ? JSON.stringify(body) : null;
+    const req = https.request({
+      hostname: 'api.github.com', path: `/repos/${owner}/${repo}${path}`, method,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'DominionCityImages/1.0',
+        ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {})
+      }
+    }, res => {
+      let b = ''; res.on('data', c => b += c);
+      res.on('end', () => {
+        if (res.statusCode >= 400) return reject(new Error(method + ' ' + path + ' -> ' + res.statusCode + ' ' + b.slice(0, 200)));
+        try { resolve(JSON.parse(b)); } catch (e) { resolve({}); }
+      });
+    });
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+
+  const ref = await api('/git/ref/heads/main', 'GET');
+  const headSha = ref.object.sha;
+  const headCommit = await api('/git/commits/' + headSha, 'GET');
+  const tree = [];
+  for (const f of files) {
+    const blob = await api('/git/blobs', 'POST', { content: f.contentBase64, encoding: 'base64' });
+    tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
+  }
+  const newTree = await api('/git/trees', 'POST', { base_tree: headCommit.tree.sha, tree });
+  const commit = await api('/git/commits', 'POST', { message, tree: newTree.sha, parents: [headSha] });
+  await api('/git/refs/heads/main', 'PATCH', { sha: commit.sha });
+  return commit.sha;
+}
+
+app.post('/fetch-city-images', async (req, res) => {
+  try {
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+      return res.status(400).json({ error: 'GITHUB_TOKEN is not set on this service. Add it in Render > Environment.' });
+    }
+    const cities = req.body.cities;           // [{slug, city, state, county}]
+    const owner = req.body.owner || 'dominionsoundmusic-create';
+    const repo = req.body.repo || 'dominionwebdesignpro-site';
+    const dryRun = !!req.body.dryRun;
+    if (!Array.isArray(cities) || !cities.length) {
+      return res.status(400).json({ error: 'send { cities: [{slug, city, state, county}] }' });
+    }
+
+    const found = [], missed = [], files = [], credits = {};
+    for (const c of cities) {
+      let hit = null;
+      try { hit = await findCityImage(c.city, c.state, c.county); } catch (e) { hit = null; }
+      if (!hit) { missed.push(c.slug); continue; }
+      let buf = null;
+      if (!dryRun) {
+        try { buf = await httpsBuffer(hit.thumb); } catch (e) { missed.push(c.slug + ' (download failed)'); continue; }
+        if (buf.length > 900000) { missed.push(c.slug + ' (too large)'); continue; }
+        files.push({ path: `images/cities/${c.slug}.jpg`, contentBase64: buf.toString('base64') });
+      }
+      credits[c.slug] = { author: hit.author, licence: hit.licence, source: hit.descriptionurl, title: hit.title };
+      found.push({ slug: c.slug, matchedOn: hit.term, bytes: buf ? buf.length : 0, licence: hit.licence, author: hit.author });
+    }
+
+    if (dryRun) {
+      return res.json({ dryRun: true, found, missed, note: 'nothing downloaded or committed' });
+    }
+
+    files.push({
+      path: 'images/cities/credits.json',
+      contentBase64: Buffer.from(JSON.stringify(credits, null, 2)).toString('base64')
+    });
+
+    const sha = await commitImages(token, owner, repo, files,
+      `Add ${found.length} city photos from Wikimedia Commons with attribution`);
+    res.json({ committed: sha, count: found.length, found, missed });
+  } catch (err) {
+    console.error('fetch-city-images:', err);
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok', version: '3.0-premium' }));
 
 const PORT = process.env.PORT || 3001;
