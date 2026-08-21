@@ -275,6 +275,14 @@ app.post('/generate-demo', async (req, res) => {
     const [copy, heroImg, aboutImg, serviceImg] = await Promise.all([
       callClaude(`You are writing premium website copy for a local business. Be specific, compelling, and professional — NOT generic.
 
+HARD RULES — these override everything else:
+1. NEVER invent facts about this business. No licences, insurance, certifications, awards, years in business, customer counts, ratings, prices, warranties, staff names, or statistics. You do not know any of them.
+2. NEVER write a customer review or testimonial. Fabricated reviews are unlawful and this is a real named business.
+3. NEVER claim emergency, 24/7 or same-day availability.
+4. Where a real figure would go, output the placeholder exactly as specified so the owner can fill it in.
+5. Banned phrases: "your trusted partner", "one-stop solution", "look no further", "unmatched excellence", "we've got you covered".
+6. Write plainly. Short paragraphs. No em dashes in visible copy. No eyebrow labels above headings.
+
 Business: "${businessName}"
 Type: "${businessType}"  
 Location: "${city}${state ? ', ' + state : ''}"
@@ -284,9 +292,9 @@ Return ONLY a valid JSON object, no markdown, no explanation:
 {
   "headline": "powerful 5-7 word headline that speaks to their specific customers pain points",
   "subheadline": "compelling 18-22 word subheadline with a specific benefit and location mention",
-  "badge1": "short trust badge like '20+ Years Experience' or 'Licensed & Insured'",
-  "badge2": "short trust badge like 'Same-Day Service' or '5-Star Rated'",
-  "badge3": "short trust badge like 'Free Estimates' or '100% Satisfaction'",
+  "badge1": "a short badge that states an INTENT rather than an unverified fact - e.g. 'Free Estimates' or 'Locally Owned'. NEVER claim a licence, insurance, a rating, an award, years in business, or same-day/24-7/emergency availability",
+  "badge2": "a second badge under the same rule",
+  "badge3": "a third badge under the same rule",
   "service1": "specific service name",
   "service1desc": "2 sentences about this service with a benefit. Make the FIRST sentence a complete thought under 15 words - it is shown alone on the hero card",
   "service1icon": "single relevant emoji",
@@ -296,12 +304,12 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   "service3": "specific service name",
   "service3desc": "2 sentences about this service with a benefit. Make the FIRST sentence a complete thought under 15 words - it is shown alone on the hero card",
   "service3icon": "single relevant emoji",
-  "stat1num": "impressive stat number like '500+' or '15'",
-  "stat1label": "what that stat means like 'Happy Customers' or 'Years Experience'",
-  "stat2num": "another stat like '24/7' or '4.9★'",
-  "stat2label": "what it means like 'Emergency Service' or 'Google Rating'",
-  "stat3num": "another stat",
-  "stat3label": "what it means",
+  "stat1num": "[YOUR NUMBER]",
+  "stat1label": "a stat label this business would plausibly fill in, e.g. 'Years in Business' or 'Jobs Completed' - the LABEL only, never a made-up figure",
+  "stat2num": "[YOUR NUMBER]",
+  "stat2label": "a second stat label, no figure",
+  "stat3num": "[YOUR NUMBER]",
+  "stat3label": "a third stat label, no figure",
   "aboutTitle": "4-5 word about section headline",
   "aboutText": "3-4 sentences about the business, their commitment to the city, what makes them different. Sound local and real.",
   "whyTitle": "compelling reason to choose them headline 4-5 words",
@@ -311,10 +319,10 @@ Return ONLY a valid JSON object, no markdown, no explanation:
   "why2detail": "one sentence elaboration",
   "why3": "third key differentiator",
   "why3detail": "one sentence elaboration",
-  "testimonial1": "realistic 2-3 sentence 5-star review from a happy customer",
-  "testimonial1name": "realistic first name last initial",
-  "testimonial2": "different realistic 2-3 sentence 5-star review",
-  "testimonial2name": "different realistic first name last initial",
+  "testimonial1": "[Your real Google review will appear here. Send us your reviews and we will put them on the page.]",
+  "testimonial1name": "[Customer name]",
+  "testimonial2": "[Your real Google review will appear here.]",
+  "testimonial2name": "[Customer name]",
   "cta": "action-oriented 3-5 word CTA button text",
   "ctaSubtext": "urgency line under CTA like 'Free consultation — no commitment required'"
 }`),
@@ -328,17 +336,17 @@ Return ONLY a valid JSON object, no markdown, no explanation:
     catch {
       d = {
         headline: `${businessType} Services in ${city}`, subheadline: `Professional ${businessType} services in ${city}. Trusted by hundreds of local customers.`,
-        badge1: 'Licensed & Insured', badge2: 'Free Estimates', badge3: '5-Star Rated',
+        badge1: 'Free Estimates', badge2: 'Locally Owned', badge3: 'Straight Answers',
         service1: 'Professional Service', service1desc: 'Expert service delivered with care and precision.', service1icon: hero.emoji,
         service2: 'Quality Workmanship', service2desc: 'Every job done right the first time, guaranteed.', service2icon: '⭐',
         service3: 'Customer First', service3desc: 'Your satisfaction is our top priority on every project.', service3icon: '✅',
-        stat1num: '500+', stat1label: 'Happy Customers', stat2num: '10+', stat2label: 'Years Experience', stat3num: '5★', stat3label: 'Google Rating',
+        stat1num: '[YOUR NUMBER]', stat1label: 'Jobs Completed', stat2num: '[YOUR NUMBER]', stat2label: 'Years in Business', stat3num: '[YOUR NUMBER]', stat3label: 'Google Reviews',
         aboutTitle: `About ${businessName}`, aboutText: `${businessName} has proudly served ${city} and surrounding communities. We bring expertise, dedication, and a commitment to excellence to every project.`,
         whyTitle: 'Why Choose Us', why1: 'Expert Team', why1detail: 'Our trained professionals deliver exceptional results every time.',
         why2: 'Fast & Reliable', why2detail: 'We show up on time and get the job done right.',
         why3: 'Fair Pricing', why3detail: 'Transparent quotes with no hidden fees or surprises.',
-        testimonial1: `${businessName} did an outstanding job. Professional, on time, and the results exceeded my expectations. Highly recommend!`, testimonial1name: 'Sarah M.',
-        testimonial2: `Best ${businessType} in ${city}. Called in the morning and they had everything handled same day. Will use again!`, testimonial2name: 'David R.',
+        testimonial1: '[Your real Google review will appear here. Send us your reviews and we will add them.]', testimonial1name: '[Customer name]',
+        testimonial2: '[Your real Google review will appear here.]', testimonial2name: '[Customer name]',
         cta: 'Get Your Free Quote', ctaSubtext: 'No commitment required — call or click'
       };
     }
