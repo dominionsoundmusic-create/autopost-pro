@@ -457,24 +457,24 @@ nav{
   position:relative;z-index:2;
   max-width:1200px;margin:0 auto;width:100%;
   padding:80px 48px;
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  display:grid;grid-template-columns:minmax(0,640px);
   gap:clamp(48px,6vw,96px);align-items:center;
 }
 @media(max-width:900px){.hero-grid{grid-template-columns:1fr;padding:60px 24px;gap:32px}}
 .hero-left{min-width:0}
 .hero-left h1{max-width:15ch;overflow-wrap:break-word}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--accent);font-size:.72rem;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:1px;text-transform:uppercase}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:transparent;border:none;color:var(--accent);font-size:.75rem;font-weight:800;padding:0;margin-bottom:20px;letter-spacing:1.5px;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,0.95)}
 .hero h1{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;color:var(--white);line-height:1.08;margin-bottom:18px;letter-spacing:-0.02em;text-shadow:0 2px 12px rgba(0,0,0,0.9),0 1px 4px rgba(0,0,0,0.8)}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero-sub{font-size:clamp(.95rem,2vw,1.1rem);color:var(--white);line-height:1.7;margin-bottom:32px;max-width:520px;text-shadow:0 1px 8px rgba(0,0,0,0.9);background:rgba(0,0,0,0.35);padding:12px 16px;border-radius:8px;backdrop-filter:blur(2px)}
+.hero-sub{font-size:clamp(.95rem,2vw,1.1rem);color:var(--white);line-height:1.7;margin-bottom:32px;max-width:520px;text-shadow:0 2px 14px rgba(0,0,0,0.95),0 1px 4px rgba(0,0,0,0.9)}
 .hero-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
-.hero-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.85);font-size:.75rem;font-weight:600;padding:6px 12px;border-radius:8px}
+.hero-badge{display:flex;align-items:center;gap:6px;background:transparent;border:none;color:#fff;font-size:.78rem;font-weight:700;padding:0;margin-right:18px;text-shadow:0 2px 10px rgba(0,0,0,0.95)}
 .hero-badge::before{content:'✓';color:var(--accent);font-weight:900}
 .hero-btns{display:flex;flex-wrap:wrap;gap:12px}
 .btn-primary{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#0A0F1E;padding:14px 28px;border-radius:12px;font-weight:800;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(201,168,76,0.35);transition:transform 0.2s}
 .btn-primary:hover{transform:translateY(-2px)}
 .btn-secondary{background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);color:var(--white);padding:14px 28px;border-radius:12px;font-weight:700;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-.hero-right{display:flex;flex-direction:column;gap:12px}
+.hero-right{display:none}
 @media(max-width:900px){.hero-right{display:none}}
 .hero-card{background:rgba(8,10,16,0.72);border:1px solid rgba(255,255,255,0.14);border-radius:var(--radius);padding:20px 22px;backdrop-filter:blur(14px);box-shadow:0 8px 28px rgba(0,0,0,0.35)}
 .hero-card-icon{font-size:1.5rem;margin-bottom:8px}
