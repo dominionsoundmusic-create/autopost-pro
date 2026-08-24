@@ -110,6 +110,9 @@ const PHOTO_FOLDER_RULES = [
   ['accounting', 'accounting'], ['accountant', 'accounting'], ['bookkeep', 'accounting'],
   ['tax', 'accounting'], ['cpa', 'accounting'],
   ['photograph', 'photography'],
+  ['power wash', 'cleaning'], ['powerwash', 'cleaning'],
+  ['pressure wash', 'cleaning'], ['pressurewash', 'cleaning'],
+  ['water blast', 'cleaning'], ['soft wash', 'cleaning'],
   ['maid', 'cleaning'], ['janitorial', 'cleaning'], ['housekeep', 'cleaning'],
   ['clean', 'cleaning'],
   // generic catch-alls LAST so a named trade always wins
