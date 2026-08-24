@@ -377,7 +377,7 @@ function clampWords(text, maxWords) {
 }
 
 function buildHTML(name, type, city, state, d, hero, heroImg, aboutImg, serviceImg, refCode) {
-  const loc = `${city}${state ? ', ' + state : ''}`;
+  const loc = `${city}${state ? ', ' + String(state).trim().toUpperCase() : ''}`;
   const phone = '(903) 636-7511';
 
   return `<!DOCTYPE html>
@@ -611,11 +611,9 @@ footer{
       <div class="hero-badges">
         <div class="hero-badge">${d.badge1}</div>
         <div class="hero-badge">${d.badge2}</div>
-        <div class="hero-badge">${d.badge3}</div>
       </div>
       <div class="hero-btns">
         <a href="tel:+19036367511" class="btn-primary">📞 ${d.cta}</a>
-        <a href="tel:+19036367511" class="btn-secondary">Get Free Quote</a>
       </div>
     </div>
     <div class="hero-right">
@@ -628,11 +626,6 @@ footer{
         <div class="hero-card-icon">${d.service2icon || '⭐'}</div>
         <h3>${d.service2}</h3>
         <p>${clampWords(d.service2desc, 14)}</p>
-      </div>
-      <div class="hero-card">
-        <div class="hero-card-icon">${d.service3icon || '✅'}</div>
-        <h3>${d.service3}</h3>
-        <p>${clampWords(d.service3desc, 14)}</p>
       </div>
     </div>
   </div>
