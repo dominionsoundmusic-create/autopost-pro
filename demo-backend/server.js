@@ -1308,6 +1308,38 @@ async function findCityImage(city, state, county, forceTerm) {
   return null;
 }
 
+// Read the credits file that is already in the repo so a new run ADDS to it.
+// Each entry is the legally required attribution for a CC BY / CC BY-SA photo,
+// so dropping entries for cities we did not fetch this run would leave those
+// images published with no credit. Returns {} only when the file genuinely
+// does not exist yet; any other failure throws, so we never silently shrink it.
+async function readExistingCredits(token, owner, repo) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.github.com',
+      path: `/repos/${owner}/${repo}/contents/images/cities/credits.json`,
+      method: 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github.raw',
+        'User-Agent': 'DominionCityImages/1.0'
+      }
+    }, res => {
+      let b = ''; res.on('data', c => b += c);
+      res.on('end', () => {
+        if (res.statusCode === 404) return resolve({});
+        if (res.statusCode >= 400) {
+          return reject(new Error('could not read existing credits.json -> ' + res.statusCode + ' ' + b.slice(0, 200)));
+        }
+        try { resolve(JSON.parse(b) || {}); }
+        catch (e) { reject(new Error('existing credits.json is not valid JSON; refusing to overwrite it')); }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 // One commit, many files — same tree-API approach the blog generator uses.
 async function commitImages(token, owner, repo, files, message) {
   const api = (path, method, body) => new Promise((resolve, reject) => {
@@ -1379,14 +1411,23 @@ app.post('/fetch-city-images', async (req, res) => {
       return res.json({ dryRun: true, found, missed, note: 'nothing downloaded or committed' });
     }
 
+    // MERGE with what is already committed. Writing `credits` on its own would
+    // drop the attribution for every city fetched on a previous run.
+    const existingCredits = await readExistingCredits(token, owner, repo);
+    const mergedCredits = Object.assign({}, existingCredits, credits);
+    const keptCount = Object.keys(existingCredits).length;
+    if (Object.keys(mergedCredits).length < keptCount) {
+      throw new Error('credits merge would lose entries; aborting before commit');
+    }
     files.push({
       path: 'images/cities/credits.json',
-      contentBase64: Buffer.from(JSON.stringify(credits, null, 2)).toString('base64')
+      contentBase64: Buffer.from(JSON.stringify(mergedCredits, null, 2)).toString('base64')
     });
 
     const sha = await commitImages(token, owner, repo, files,
       `Add ${found.length} city photos from Wikimedia Commons with attribution`);
-    res.json({ committed: sha, count: found.length, found, missed });
+    res.json({ committed: sha, count: found.length, found, missed,
+                creditsKept: keptCount, creditsTotal: Object.keys(mergedCredits).length });
   } catch (err) {
     console.error('fetch-city-images:', err);
     res.status(500).json({ error: String(err.message || err) });
