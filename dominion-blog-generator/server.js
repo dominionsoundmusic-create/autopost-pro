@@ -435,6 +435,13 @@ const BRANDS = [
   }
 ];
 
+// Sep 25 2026 - the nine Lead Pro and pool sites are retired from automatic posting.
+// Their posts were templated, showed visible code fences, used contractor voice and
+// temporary netlify.app canonicals, and were deleted by hand. Do not re-add them;
+// content on those sites is researched and written by hand.
+const RETIRED_REPOS = new Set(['houston-powerwashing-pro','houston-hvac-pro','houston-roofing-pro','dallas-powerwashing-pro','dallas-hvac-pro','dallas-roofing-pro','phoenix-pool-cleaning-pro','tucson-pool-cleaning-pro','arizona-pool-cleaning-pro']);
+for (let i = BRANDS.length - 1; i >= 0; i--) { if (RETIRED_REPOS.has(BRANDS[i].repo_name)) BRANDS.splice(i, 1); }
+
 // Generate a blog post using Claude API
 async function generateBlogPost(brand, topic) {
   const year = new Date().getFullYear();
@@ -472,7 +479,8 @@ Write the full blog post now:`;
     }
   });
 
-  return response.data.content[0].text;
+  // Strip markdown code fences the model sometimes wraps around the HTML (they showed on every post).
+  return response.data.content[0].text.replace(/^\s*```[a-zA-Z]*\s*\n?/, '').replace(/\n?\s*```\s*$/, '').replace(/```(?:html)?/g, '');
 }
 
 // Create full HTML page for the blog post
