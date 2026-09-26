@@ -442,6 +442,13 @@ const BRANDS = [
 const RETIRED_REPOS = new Set(['houston-powerwashing-pro','houston-hvac-pro','houston-roofing-pro','dallas-powerwashing-pro','dallas-hvac-pro','dallas-roofing-pro','phoenix-pool-cleaning-pro','tucson-pool-cleaning-pro','arizona-pool-cleaning-pro']);
 for (let i = BRANDS.length - 1; i >= 0; i--) { if (RETIRED_REPOS.has(BRANDS[i].repo_name)) BRANDS.splice(i, 1); }
 
+// Sep 26 2026 - the generator is RETIRED for every brand. Its posts were templated
+// (duplicates, code fences, placeholders) and were deleted by hand from every Dominion
+// site. Dominion Hard Money keeps its own researched weekly post, which is a separate
+// GitHub Action in that repo and is not affected. /run-all now publishes nothing.
+// Do not re-enable without Maurice's say-so; any future blog must be researched, not templated.
+BRANDS.length = 0;
+
 // Generate a blog post using Claude API
 async function generateBlogPost(brand, topic) {
   const year = new Date().getFullYear();
