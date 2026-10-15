@@ -88,7 +88,13 @@ header{background:var(--dark);position:sticky;top:0;z-index:50;box-shadow:0 2px 
 .mark{flex:0 0 auto;display:inline-flex;width:42px;height:42px;border-radius:50%;background:var(--call);align-items:center;justify-content:center;font-size:1.2rem}
 nav{margin-left:auto}nav ul{list-style:none;margin:0;padding:0;display:flex;gap:4px}
 nav a{display:block;color:#eef3f8;text-decoration:none;font-weight:600;font-size:.97rem;padding:10px 12px}
-@media(max-width:1060px){nav{display:none}.hdr .btn{margin-left:auto}}
+@media(max-width:1060px){nav{display:none}.hdr .lang{margin-left:auto}}
+.lang{display:inline-flex;flex:0 0 auto;border:2px solid var(--call);border-radius:999px;overflow:hidden}
+.lang button{background:transparent;border:0;color:#fff;font:800 .8rem/1 Inter,Arial,sans-serif;letter-spacing:.05em;padding:9px 12px;cursor:pointer;min-height:38px}
+.lang button[aria-pressed="true"]{background:var(--call);color:var(--deep)}
+.lang button:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+.skiptranslate iframe,.goog-te-banner-frame,#goog-gt-tt,.goog-te-balloon-frame{display:none!important}
+body{top:0!important}.goog-text-highlight{background:none!important;box-shadow:none!important}
 @media(max-width:560px){.logo{font-size:.98rem}.mark{width:34px;height:34px;font-size:1rem}.hdr .btn .long{display:none}}
 @media(min-width:561px){.hdr .btn .short{display:none}}
 .hero{position:relative;isolation:isolate;display:flex;align-items:center;min-height:min(calc(100vh - 104px),700px);color:#fff;background:var(--deep);overflow:hidden}
@@ -195,7 +201,7 @@ function buildPlaybookDemo({ name, type, city, state, phone, d, hero, photos, re
 <div class="sample-bar">Free sample website for ${esc(name)} by Dominion Web Design Pro${refCode ? ' &middot; Ref ' + esc(refCode) : ''}</div>
 <header><div class="hdr"><a class="logo" href="#top"><span class="mark">${esc(hero.emoji || '★')}</span><span>${esc(name)}</span></a>
 <nav><ul><li><a href="#services">Services</a></li><li><a href="#how">How it works</a></li><li><a href="#about">About</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#faq">FAQ</a></li><li><a href="#contact">Contact</a></li></ul></nav>
-<a class="btn btn-call btn-sm" href="tel:${tel}"><span class="long">Call ${esc(phoneShow)}</span><span class="short">Call</span></a></div></header>
+<div class="lang notranslate" translate="no" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button></div><a class="btn btn-call btn-sm" href="tel:${tel}"><span class="long">Call ${esc(phoneShow)}</span><span class="short">Call</span></a></div></header>
 <main>
 <section class="hero">${img(pic(0), type + ' in ' + loc, '', true)}<div class="fade"></div><div class="hero-in">
 <h1>${esc(d.headline)}</h1><p class="hero-lead">${esc(d.subheadline)}</p>
@@ -218,6 +224,18 @@ ${why.length ? `<ul class="why">${why.map(w => `<li><strong>${esc(w.title)}.</st
 <div><p class="flabel">Services</p><ul>${services.map((s, i) => `<li><a href="#${slug(s.name, i)}">${esc(s.name)}</a></li>`).join('')}</ul></div>
 <div><p class="flabel">Company</p><ul><li><a href="#about">About</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#faq">FAQ</a></li><li><a href="#contact">Contact</a></li></ul></div></div>
 <div class="fbottom">&copy; 2026 ${esc(name)} &middot; Sample site by <a href="https://dominionwebdesignpro.com" target="_blank" rel="noopener">Dominion Web Design Pro</a> &middot; Photos are placeholders until your own are added.</div></footer>
+<div id="gt_el" hidden></div>
+<script>(function(){
+/* Spanish/English toggle. Uses Google Translate's hidden widget and switches it
+   in place (no cookie, no reload) so it also works inside the demo preview frame. */
+var btns=[].slice.call(document.querySelectorAll('.lang button')),loaded=false;
+function mark(l){btns.forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-lang')===l?'true':'false')});document.documentElement.lang=l;}
+function clearCookie(){var x=';expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/',p=location.hostname.split('.');try{document.cookie='googtrans='+x;for(var i=0;i<p.length-1;i++){document.cookie='googtrans='+x+';domain=.'+p.slice(i).join('.');}}catch(e){}}
+function pick(l,tries){var c=document.querySelector('.goog-te-combo');if(!c){if(tries<60)setTimeout(function(){pick(l,tries+1)},150);return;}c.value=l;c.dispatchEvent(new Event('change'));setTimeout(clearCookie,800);}
+window.gtInit=function(){try{new google.translate.TranslateElement({pageLanguage:'en',includedLanguages:'en,es',autoDisplay:false},'gt_el');}catch(e){}};
+function load(){if(loaded)return;loaded=true;var s=document.createElement('script');s.src='https://translate.google.com/translate_a/element.js?cb=gtInit';s.async=true;document.body.appendChild(s);}
+btns.forEach(function(b){b.addEventListener('click',function(){var l=b.getAttribute('data-lang');if(b.getAttribute('aria-pressed')==='true')return;mark(l);load();pick(l,0);});});
+})();</script>
 </body></html>`;
 }
 
