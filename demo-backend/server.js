@@ -200,11 +200,11 @@ function extractJson(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-async function callClaudeJson(prompt, attempts = 3, label = 'ai') {
+async function callClaudeJson(prompt, attempts = 3, label = 'ai', maxTokens = 3000) {
   let lastErr;
   for (let n = 1; n <= attempts; n++) {
     try {
-      return extractJson(await callClaude(prompt));
+      return extractJson(await callClaude(prompt, maxTokens));
     } catch (e) {
       lastErr = e;
       console.warn(`[${label}] attempt ${n} of ${attempts} failed: ${e.message}`);
@@ -214,11 +214,11 @@ async function callClaudeJson(prompt, attempts = 3, label = 'ai') {
   throw lastErr;
 }
 
-function callClaude(prompt) {
+function callClaude(prompt, maxTokens = 3000) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }]
     });
     const req = https.request('https://api.anthropic.com/v1/messages', {
@@ -266,17 +266,17 @@ app.post('/generate-demo', async (req, res) => {
 
   const { businessName, businessType, city, state, customRequest, primaryColor } = req.body;
   if (!businessName || !businessType || !city) return res.status(400).json({ error: 'Missing required fields' });
-  // Oct 7 2026: short intake. Up to three services the owner typed, and their own
-  // business phone (optional). Accepts services[] or service1..service3.
-  const services = (Array.isArray(req.body.services) ? req.body.services : [req.body.service1, req.body.service2, req.body.service3])
-    .map(s => String(s || '').trim().slice(0, 60)).filter(Boolean).slice(0, 3);
+  // Oct 14 2026: up to SIX services the owner typed (was three), and their own
+  // business phone (optional). Accepts services[] or service1..service6.
+  const services = (Array.isArray(req.body.services) ? req.body.services : [1, 2, 3, 4, 5, 6].map(n => req.body['service' + n]))
+    .map(s => String(s || '').trim().slice(0, 60)).filter(Boolean).slice(0, 6);
   const phone = parsePhone(req.body.phone);
 
   const refCode = genRefCode();
   let hero = getHero(businessName, businessType);
   if (primaryColor) hero = { ...hero, c2: primaryColor };
   const folder = getPhotoFolder(businessName, businessType);
-  let photos = pickLocalPhotos(folder, 6);
+  let photos = pickLocalPhotos(folder, 8);
   if (!photos.length) {
     const found = await Promise.all([fetchUnsplash(hero.query), fetchUnsplash(businessType + ' work service'), fetchUnsplash(businessType + ' professional')]);
     photos = found.filter(Boolean);
@@ -285,7 +285,7 @@ app.post('/generate-demo', async (req, res) => {
   try {
     let d;
     try {
-      d = await callClaudeJson(playbookPrompt({ businessName, businessType, city, state, services, customRequest }), 2, 'generate-demo');
+      d = await callClaudeJson(playbookPrompt({ businessName, businessType, city, state, services, customRequest }), 2, 'generate-demo', 6000);
     } catch (e) {
       console.warn('[generate-demo] copy failed, using fallback:', e.message);
       d = fallbackCopy({ businessName, businessType, city, services });

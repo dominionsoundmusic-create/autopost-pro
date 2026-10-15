@@ -172,7 +172,7 @@ function buildPlaybookDemo({ name, type, city, state, phone, d, hero, photos, re
     ? `<img${cls ? ` class="${cls}"` : ''} src="${esc(src)}" alt="${esc(alt)}" width="1344" height="768"${eager ? ' fetchpriority="high"' : ' loading="lazy"'}>`
     : '';
 
-  const services = (d.services || []).filter(s => s && s.name).slice(0, 3);
+  const services = (d.services || []).filter(s => s && s.name).slice(0, 6);
   const steps = (d.steps || []).filter(s => s && s.title).slice(0, 4);
   const faqs = (d.faqs || []).filter(f => f && f.q && f.a).slice(0, 5);
   const why = (d.why || []).filter(w => w && w.title).slice(0, 3);
@@ -224,7 +224,7 @@ ${why.length ? `<ul class="why">${why.map(w => `<li><strong>${esc(w.title)}.</st
 // The copy request. Services the owner typed are kept word for word; the model
 // only writes descriptions for them. If none were given it suggests three.
 function playbookPrompt({ businessName, businessType, city, state, services, customRequest }) {
-  const given = (services || []).map(s => String(s).trim()).filter(Boolean).slice(0, 3);
+  const given = (services || []).map(s => String(s).trim()).filter(Boolean).slice(0, 6);
   return `You are writing website copy for a real local business. Write plainly, specifically and warmly, for its customers.
 
 HARD RULES, these override everything else:
@@ -260,7 +260,7 @@ The services array must have ${given.length || 3} items.`;
 }
 
 function fallbackCopy({ businessName, businessType, city, services }) {
-  const names = (services || []).filter(Boolean).slice(0, 3);
+  const names = (services || []).filter(Boolean).slice(0, 6);
   const list = names.length ? names : [`${businessType} service`, 'Repairs and upkeep', 'Free estimates'];
   return {
     headline: `${businessType} in ${city}, done right`,
